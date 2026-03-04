@@ -1,11 +1,25 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import Link from "next/link"
-import { useTheme } from "./theme-provider"
-import { Home, FolderOpen, Users, Settings, Moon, Sun, Menu, X, BarChart3, Calendar } from "lucide-react"
+import { useState } from "react";
+import Link from "next/link";
+import { useTheme } from "./theme-provider";
+import {
+  Home,
+  FolderOpen,
+  Users,
+  Settings,
+  Moon,
+  Sun,
+  Menu,
+  X,
+  BarChart3,
+  Bell,
+  Calendar,
+  Search,
+} from "lucide-react";
+import { UserButton } from "@clerk/nextjs";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
@@ -14,22 +28,31 @@ const navigation = [
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Calendar", href: "/calendar", icon: Calendar },
   { name: "Settings", href: "/settings", icon: Settings },
-]
+];
 
-export function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { theme, setTheme } = useTheme()
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
 
   return (
     <div className="min-h-screen bg-platinum-900 dark:bg-outer_space-600">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
-        <div className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        <div
+          className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
       )}
 
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-outer_space-500 border-r border-french_gray-300 dark:border-payne's_gray-400 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-outer_space-500 border-r border-french_gray-300 dark:border-payne's_gray-400 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
         <div className="flex items-center justify-between h-16 px-6 border-b border-french_gray-300 dark:border-payne's_gray-400">
           <Link href="/" className="text-2xl font-bold text-blue_munsell-500">
@@ -38,6 +61,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <button
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden p-2 rounded-lg hover:bg-platinum-500 dark:hover:bg-payne's_gray-400"
+            aria-label="Close sidebar"
           >
             <X size={20} />
           </button>
@@ -67,23 +91,45 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <button
             onClick={() => setSidebarOpen(true)}
             className="lg:hidden p-2 rounded-lg hover:bg-platinum-500 dark:hover:bg-payne's_gray-400"
+            aria-label="Open sidebar"
           >
             <Menu size={20} />
           </button>
 
           <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
-            <div className="flex flex-1"></div>
+            {/* Search bar */}
+            <div className="flex flex-1 items-center">
+              <div className="relative flex-1 max-w-md">
+                <Search
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-payne's_gray-500 dark:text-french_gray-400"
+                  size={16}
+                />
+                <input
+                  type="text"
+                  placeholder="Search projects, tasks..."
+                  className="w-full pl-10 pr-4 py-2 bg-platinum-500 dark:bg-payne's_gray-400 border border-french_gray-300 dark:border-payne's_gray-300 rounded-lg text-outer_space-500 dark:text-platinum-500 placeholder-payne's_gray-500 dark:placeholder-french_gray-400 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
+                />
+              </div>
+            </div>
+
+            {/* Right-side actions */}
             <div className="flex items-center gap-x-4 lg:gap-x-6">
+              <button
+                className="p-2 rounded-lg hover:bg-platinum-500 dark:hover:bg-payne's_gray-400"
+                aria-label="Notifications"
+              >
+                <Bell size={20} />
+              </button>
+
               <button
                 onClick={() => setTheme(theme === "light" ? "dark" : "light")}
                 className="p-2 rounded-lg bg-platinum-500 dark:bg-payne's_gray-500 text-outer_space-500 dark:text-platinum-500 hover:bg-french_gray-500 dark:hover:bg-payne's_gray-400 transition-colors"
+                aria-label="Toggle theme"
               >
                 {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
               </button>
 
-              <div className="w-8 h-8 bg-blue_munsell-500 rounded-full flex items-center justify-center text-white font-semibold">
-                U
-              </div>
+              <UserButton afterSignOutUrl="/" />
             </div>
           </div>
         </div>
@@ -92,5 +138,5 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <main className="py-8 px-4 sm:px-6 lg:px-8">{children}</main>
       </div>
     </div>
-  )
+  );
 }
