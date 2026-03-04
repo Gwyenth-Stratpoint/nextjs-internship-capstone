@@ -1,5 +1,6 @@
 import { TrendingUp, Users, CheckCircle, Clock, Plus } from "lucide-react"
 import { DashboardLayout } from "@/components/dashboard-layout"
+import { currentUser } from "@clerk/nextjs/server"
 
 export default function DashboardPage() {
   return (

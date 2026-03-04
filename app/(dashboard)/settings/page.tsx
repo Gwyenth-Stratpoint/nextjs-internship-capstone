@@ -1,6 +1,11 @@
 import { User, Bell, Shield, Palette } from "lucide-react"
+import { currentUser } from "@clerk/nextjs/server"
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const user =  await currentUser() 
+
+  const fullName = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim()
+  const email = user?.emailAddresses?.[0]?.emailAddress ?? ""
   return (
     <div className="space-y-6">
       <div>
@@ -59,7 +64,7 @@ export default function SettingsPage() {
               </label>
               <input
                 type="text"
-                defaultValue="John Doe"
+                defaultValue= {fullName}
                 className="w-full px-3 py-2 border border-french_gray-300 dark:border-payne's_gray-400 rounded-lg bg-white dark:bg-outer_space-400 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
               />
             </div>
@@ -70,7 +75,7 @@ export default function SettingsPage() {
               </label>
               <input
                 type="email"
-                defaultValue="john@example.com"
+                defaultValue={email}
                 className="w-full px-3 py-2 border border-french_gray-300 dark:border-payne's_gray-400 rounded-lg bg-white dark:bg-outer_space-400 text-outer_space-500 dark:text-platinum-500 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
               />
             </div>
