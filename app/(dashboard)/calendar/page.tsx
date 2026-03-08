@@ -5,12 +5,12 @@ export default function CalendarPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-outer_space-500 dark:text-platinum-500">Calendar</h1>
-          <p className="text-payne's_gray-500 dark:text-french_gray-500 mt-2">
+          <h1 className="text-3xl font-bold text-foreground">Calendar</h1>
+          <p className="text-muted-foreground mt-2">
             View project deadlines and team schedules
           </p>
         </div>
-        <button className="inline-flex items-center px-4 py-2 bg-blue_munsell-500 text-white rounded-lg hover:bg-blue_munsell-600 transition-colors">
+        <button className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
           <Plus size={20} className="mr-2" />
           Add Event
         </button>
@@ -28,33 +28,33 @@ export default function CalendarPage() {
       </div>
 
       {/* Calendar Header */}
-      <div className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-payne's_gray-400 p-6">
+      <div className="bg-card rounded-lg border border-border p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
-            <button className="p-2 hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 rounded-lg">
+            <button className="p-2 hover:bg-muted rounded-lg">
               <ChevronLeft size={20} />
             </button>
-            <h2 className="text-xl font-semibold text-outer_space-500 dark:text-platinum-500">December 2024</h2>
-            <button className="p-2 hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 rounded-lg">
+            <h2 className="text-xl font-semibold text-foreground">December 2024</h2>
+            <button className="p-2 hover:bg-muted rounded-lg">
               <ChevronRight size={20} />
             </button>
           </div>
           <div className="flex space-x-2">
-            <button className="px-3 py-1 text-sm bg-blue_munsell-100 text-blue_munsell-700 dark:bg-blue_munsell-900 dark:text-blue_munsell-300 rounded">
+            <button className="px-3 py-1 text-sm bg-primary/15 text-primary dark:bg-primary/25 dark:text-primary rounded">
               Month
             </button>
-            <button className="px-3 py-1 text-sm text-payne's_gray-500 dark:text-french_gray-400 hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 rounded">
+            <button className="px-3 py-1 text-sm text-muted-foreground hover:bg-muted rounded">
               Week
             </button>
-            <button className="px-3 py-1 text-sm text-payne's_gray-500 dark:text-french_gray-400 hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 rounded">
+            <button className="px-3 py-1 text-sm text-muted-foreground hover:bg-muted rounded">
               Day
             </button>
           </div>
         </div>
 
         {/* Calendar Grid Placeholder */}
-        <div className="h-96 bg-platinum-800 dark:bg-outer_space-400 rounded-lg flex items-center justify-center">
-          <div className="text-center text-payne's_gray-500 dark:text-french_gray-400">
+        <div className="h-96 bg-muted rounded-lg flex items-center justify-center">
+          <div className="text-center text-muted-foreground">
             <Calendar size={48} className="mx-auto mb-2" />
             <p>Calendar Component Placeholder</p>
             <p className="text-sm">TODO: Implement with react-big-calendar or similar</p>
@@ -63,8 +63,8 @@ export default function CalendarPage() {
       </div>
 
       {/* Upcoming Events */}
-      <div className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-payne's_gray-400 p-6">
-        <h3 className="text-lg font-semibold text-outer_space-500 dark:text-platinum-500 mb-4">Upcoming Deadlines</h3>
+      <div className="bg-card rounded-lg border border-border p-6">
+        <h3 className="text-lg font-semibold text-foreground mb-4">Upcoming Deadlines</h3>
         <div className="space-y-3">
           {[
             { title: "Website Redesign", date: "Dec 15, 2024", type: "Project Deadline" },
@@ -73,13 +73,13 @@ export default function CalendarPage() {
           ].map((event, index) => (
             <div
               key={index}
-              className="flex items-center justify-between p-3 bg-platinum-800 dark:bg-outer_space-400 rounded-lg"
+              className="flex items-center justify-between p-3 bg-muted rounded-lg"
             >
               <div>
-                <div className="font-medium text-outer_space-500 dark:text-platinum-500">{event.title}</div>
-                <div className="text-sm text-payne's_gray-500 dark:text-french_gray-400">{event.type}</div>
+                <div className="font-medium text-foreground">{event.title}</div>
+                <div className="text-sm text-muted-foreground">{event.type}</div>
               </div>
-              <div className="text-sm text-payne's_gray-500 dark:text-french_gray-400">{event.date}</div>
+              <div className="text-sm text-muted-foreground">{event.date}</div>
             </div>
           ))}
         </div>
@@ -87,3 +87,4 @@ export default function CalendarPage() {
     </div>
   )
 }
+

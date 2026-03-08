@@ -39,7 +39,7 @@ export default function DashboardLayout({
   const { theme, setTheme } = useTheme();
 
   return (
-    <div className="min-h-screen bg-platinum-900 dark:bg-outer_space-600">
+    <div className="min-h-screen bg-background">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
@@ -50,17 +50,17 @@ export default function DashboardLayout({
 
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-outer_space-500 border-r border-french_gray-300 dark:border-payne's_gray-400 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between h-16 px-6 border-b border-french_gray-300 dark:border-payne's_gray-400">
-          <Link href="/" className="text-2xl font-bold text-blue_munsell-500">
-            TaskFlow
+        <div className="flex items-center justify-between h-16 px-6 border-b border-border">
+          <Link href="/" className="text-2xl font-bold text-primary">
+            Kilos
           </Link>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-2 rounded-lg hover:bg-platinum-500 dark:hover:bg-payne's_gray-400"
+            className="lg:hidden p-2 rounded-lg hover:bg-muted"
             aria-label="Close sidebar"
           >
             <X size={20} />
@@ -73,7 +73,7 @@ export default function DashboardLayout({
               <li key={item.name}>
                 <Link
                   href={item.href}
-                  className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-outer_space-500 dark:text-platinum-500 hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 transition-colors"
+                  className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-foreground hover:bg-muted transition-colors"
                 >
                   <item.icon className="mr-3" size={20} />
                   {item.name}
@@ -87,10 +87,10 @@ export default function DashboardLayout({
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top bar */}
-        <div className="sticky top-0 z-30 flex h-16 items-center gap-x-4 border-b border-french_gray-300 dark:border-payne's_gray-400 bg-white dark:bg-outer_space-500 px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
+        <div className="sticky top-0 z-30 flex h-16 items-center gap-x-4 border-b border-border bg-card px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-2 rounded-lg hover:bg-platinum-500 dark:hover:bg-payne's_gray-400"
+            className="lg:hidden p-2 rounded-lg hover:bg-muted"
             aria-label="Open sidebar"
           >
             <Menu size={20} />
@@ -101,13 +101,13 @@ export default function DashboardLayout({
             <div className="flex flex-1 items-center">
               <div className="relative flex-1 max-w-md">
                 <Search
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-payne's_gray-500 dark:text-french_gray-400"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
                   size={16}
                 />
                 <input
                   type="text"
                   placeholder="Search projects, tasks..."
-                  className="w-full pl-10 pr-4 py-2 bg-platinum-500 dark:bg-payne's_gray-400 border border-french_gray-300 dark:border-payne's_gray-300 rounded-lg text-outer_space-500 dark:text-platinum-500 placeholder-payne's_gray-500 dark:placeholder-french_gray-400 focus:outline-none focus:ring-2 focus:ring-blue_munsell-500"
+                  className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
             </div>
@@ -115,7 +115,7 @@ export default function DashboardLayout({
             {/* Right-side actions */}
             <div className="flex items-center gap-x-4 lg:gap-x-6">
               <button
-                className="p-2 rounded-lg hover:bg-platinum-500 dark:hover:bg-payne's_gray-400"
+                className="p-2 rounded-lg hover:bg-muted"
                 aria-label="Notifications"
               >
                 <Bell size={20} />
@@ -123,7 +123,7 @@ export default function DashboardLayout({
 
               <button
                 onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-                className="p-2 rounded-lg bg-platinum-500 dark:bg-payne's_gray-500 text-outer_space-500 dark:text-platinum-500 hover:bg-french_gray-500 dark:hover:bg-payne's_gray-400 transition-colors"
+                className="p-2 rounded-lg bg-muted text-foreground hover:bg-accent dark:hover:bg-border transition-colors"
                 aria-label="Toggle theme"
               >
                 {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
