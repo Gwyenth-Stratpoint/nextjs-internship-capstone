@@ -82,29 +82,32 @@ export const queries = {
     }) => {
       await assertWorkspaceMember(data.workspaceId, data.createdById);
 
-      return db.transaction(async (tx) => {
-        const [proj] = await tx
-          .insert(projects)
-          .values({
-            workspaceId: data.workspaceId,
-            name: data.name,
-            description: data.description ?? null,
-            dueDate: data.dueDate ?? null,
-            createdById: data.createdById,
-          })
-          .returning();
+      const [proj] = await db
+        .insert(projects)
+        .values({
+          workspaceId: data.workspaceId,
+          name: data.name,
+          description: data.description ?? null,
+          dueDate: data.dueDate ?? null,
+          createdById: data.createdById,
+        })
+        .returning();
 
-        if (!proj) throw new Error("Failed to create project");
+      if (!proj) throw new Error("Failed to create project");
 
+      try {
         // role-only ownership
-        await tx.insert(projectMembers).values({
+        await db.insert(projectMembers).values({
           projectId: proj.id,
           userId: data.createdById,
           role: "owner",
         });
+      } catch (error) {
+        await db.delete(projects).where(eq(projects.id, proj.id));
+        throw error;
+      }
 
-        return proj;
-      });
+      return proj;
     },
 
     update: async (
