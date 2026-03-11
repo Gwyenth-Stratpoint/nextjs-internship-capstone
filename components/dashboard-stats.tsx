@@ -1,37 +1,45 @@
-import { TrendingUp, Users, CheckCircle, Clock } from "lucide-react"
+import { CheckCircle, Clock, TrendingUp, Users } from "lucide-react"
 
-const stats = [
+type DashboardStat = {
+  name: string
+  value: string | number
+  change: string
+  changeType: "positive" | "negative" | "neutral"
+  icon: typeof TrendingUp
+}
+
+const fallbackStats: DashboardStat[] = [
   {
     name: "Active Projects",
-    value: "12",
-    change: "+2.5%",
-    changeType: "positive",
+    value: "--",
+    change: "Loading...",
+    changeType: "neutral",
     icon: TrendingUp,
   },
   {
     name: "Team Members",
-    value: "24",
-    change: "+4.1%",
-    changeType: "positive",
+    value: "--",
+    change: "Waiting for team data",
+    changeType: "neutral",
     icon: Users,
   },
   {
     name: "Completed Tasks",
-    value: "156",
-    change: "+12.3%",
-    changeType: "positive",
+    value: "--",
+    change: "Waiting for task data",
+    changeType: "neutral",
     icon: CheckCircle,
   },
   {
     name: "Pending Tasks",
-    value: "43",
-    change: "-2.1%",
-    changeType: "negative",
+    value: "--",
+    change: "Waiting for task data",
+    changeType: "neutral",
     icon: Clock,
   },
 ]
 
-export function DashboardStats() {
+export function DashboardStats({ stats = fallbackStats }: { stats?: DashboardStat[] }) {
   return (
     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
       {stats.map((stat) => (
@@ -56,7 +64,9 @@ export function DashboardStats() {
                     className={`ml-2 flex items-baseline text-sm font-semibold ${
                       stat.changeType === "positive"
                         ? "text-green-600 dark:text-green-400"
-                        : "text-red-600 dark:text-red-400"
+                        : stat.changeType === "negative"
+                          ? "text-red-600 dark:text-red-400"
+                          : "text-muted-foreground"
                     }`}
                   >
                     {stat.change}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ArrowLeft, Calendar, MoreHorizontal, Settings, Users } from "lucide-react";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 
 type Project = {
   id: string;
@@ -14,7 +14,8 @@ type ApiResponse<T> =
   | { success: true; data: T }
   | { success: false; error: { code: string; message: string } };
 
-export default function ProjectPage({ params }: { params: { id: string } }) {
+export default function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const [project, setProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +28,7 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
       setError(null);
 
       try {
-        const response = await fetch(`/api/projects/${params.id}`, { cache: "no-store" });
+        const response = await fetch(`/api/projects/${id}`, { cache: "no-store" });
         const payload = (await response.json()) as ApiResponse<Project>;
 
         if (!response.ok || !payload.success) {
@@ -54,7 +55,7 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
     return () => {
       active = false;
     };
-  }, [params.id]);
+  }, [id]);
 
   if (isLoading) {
     return <div className="text-sm text-muted-foreground">Loading project...</div>;
