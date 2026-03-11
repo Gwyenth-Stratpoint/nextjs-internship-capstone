@@ -4,6 +4,8 @@ import Link from "next/link";
 import { ArrowLeft, Calendar, MoreHorizontal, Settings, Users } from "lucide-react";
 import { use, useEffect, useState } from "react";
 
+import { KanbanBoard } from "@/components/kanban-board";
+
 type Project = {
   id: string;
   name: string;
@@ -15,11 +17,14 @@ type ApiResponse<T> =
   | { success: false; error: { code: string; message: string } };
 
 export default function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
+  // Next.js 16 passes dynamic params as a Promise in client components.
   const { id } = use(params);
+  // Project metadata for the board header and page state.
   const [project, setProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Load the current project before rendering its board content.
   useEffect(() => {
     let active = true;
 
@@ -98,9 +103,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
         </div>
       </div>
 
-      <div className="bg-card rounded-lg border border-border p-6 text-sm text-muted-foreground">
-        Task 4.1 project read route is active. Task board CRUD can be implemented in Task 4.3 and 4.4.
-      </div>
+      <KanbanBoard projectId={id} />
     </div>
   );
 }
