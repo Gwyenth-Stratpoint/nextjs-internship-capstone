@@ -28,7 +28,7 @@ function DashboardProjectsSkeleton() {
 }
 
 function formatProjectDate(value: string) {
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("en-PH", {
     month: "short",
     day: "numeric",
     year: "numeric",

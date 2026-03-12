@@ -1,47 +1,59 @@
 "use client"
 
 import { MoreHorizontal, Plus } from "lucide-react"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 
+import { CreateTaskModal } from "@/components/modals/create-task-modal"
+import { TaskCard } from "@/components/task-card"
 import { useLists } from "@/hooks/use-lists"
 import { useTasks } from "@/hooks/use-tasks"
 
 type TaskStatus = "open" | "in_progress" | "blocked" | "done"
+type TaskPriority = "none" | "low" | "medium" | "high" | "urgent"
+type ProjectRole = "owner" | "admin" | "member" | "viewer"
 
-function getTaskStatusTone(status: TaskStatus) {
-  switch (status) {
-    case "done":
-      return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
-    case "in_progress":
-      return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-    case "blocked":
-      return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
-    default:
-      return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-  }
-}
+type ModalState =
+  | { mode: "create"; listId: string; listName: string }
+  | {
+      mode: "edit"
+      listId: string
+      listName: string
+      task: {
+        id: string
+        title: string
+        description?: string | null
+        status: TaskStatus
+        priority: TaskPriority
+        dueDate?: string | null
+      }
+    }
+  | null
 
-function getPriorityTone(priority: "none" | "low" | "medium" | "high" | "urgent") {
-  switch (priority) {
-    case "urgent":
-    case "high":
-      return "text-red-600 dark:text-red-400"
-    case "medium":
-      return "text-yellow-600 dark:text-yellow-400"
-    case "low":
-      return "text-green-600 dark:text-green-400"
-    default:
-      return "text-muted-foreground"
-  }
-}
-
-export function KanbanBoard({ projectId }: { projectId: string }) {
+export function KanbanBoard({ projectId, role }: { projectId: string; role: ProjectRole }) {
   // Column data for the current project board.
-  const { lists, isLoading: isListsLoading, error: listsError, createList, updateList, archiveList, isMutating: isListsMutating } =
-    useLists(projectId)
+  const {
+    lists,
+    isLoading: isListsLoading,
+    error: listsError,
+    createList,
+    updateList,
+    deleteList,
+    isMutating: isListsMutating,
+  } = useLists(projectId)
 
-  // Task data grouped underneath each list.
-  const { tasks, isLoading: isTasksLoading, error: tasksError } = useTasks(projectId)
+  // Task data and mutations for board CRUD interactions.
+  const {
+    tasks,
+    isLoading: isTasksLoading,
+    error: tasksError,
+    createTask,
+    updateTask,
+    deleteTask,
+    isMutating: isTasksMutating,
+  } = useTasks(projectId)
+
+  // Modal state for creating or editing a task.
+  const [modalState, setModalState] = useState<ModalState>(null)
 
   const activeLists = useMemo(
     () => lists.filter((list) => !list.archived).sort((a, b) => a.position - b.position),
@@ -95,19 +107,66 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
     }
   }
 
-  async function handleArchiveList(listId: string, name: string) {
-    const confirmed = window.confirm(`Archive "${name}"? Tasks will remain in the project.`)
+  async function handleDeleteList(listId: string, name: string) {
+    const confirmed = window.confirm(`Delete "${name}"? Tasks in this list will be detached from the column.`)
     if (!confirmed) return
 
     try {
-      await archiveList(listId)
+      await deleteList(listId)
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "Failed to archive list")
+      window.alert(err instanceof Error ? err.message : "Failed to delete list")
     }
+  }
+
+  async function handleDeleteTask(taskId: string, title: string) {
+    const confirmed = window.confirm(`Delete "${title}"? This cannot be undone.`)
+    if (!confirmed) return
+
+    try {
+      await deleteTask(taskId)
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "Failed to delete task")
+    }
+  }
+
+  async function handleTaskSubmit(input: {
+    id?: string
+    title: string
+    description?: string | null
+    status: TaskStatus
+    priority: TaskPriority
+    dueDate?: string | null
+  }) {
+    if (!modalState) return
+
+    if (modalState.mode === "create") {
+      const listTaskCount = tasksByList.get(modalState.listId)?.length ?? 0
+      await createTask({
+        title: input.title,
+        description: input.description ?? null,
+        status: input.status,
+        priority: input.priority,
+        dueDate: input.dueDate ?? null,
+        listId: modalState.listId,
+        position: listTaskCount,
+      })
+      return
+    }
+
+    await updateTask(modalState.task.id, {
+      title: input.title,
+      description: input.description ?? null,
+      status: input.status,
+      priority: input.priority,
+      dueDate: input.dueDate ?? null,
+    })
   }
 
   const boardError = listsError ?? tasksError
   const isLoading = isListsLoading || isTasksLoading
+  const isMutating = isListsMutating || isTasksMutating
+  const canManageLists = role === "owner" || role === "admin"
+  const canManageTasks = canManageLists || role === "member"
 
   return (
     <div className="space-y-4">
@@ -115,17 +174,19 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
         <div>
           <h2 className="text-xl font-semibold text-foreground">Project board</h2>
           <p className="text-sm text-muted-foreground">
-            Manage columns inside this project. Drag and drop can be added in Task 5.2.
+            Manage columns and task cards inside this project. Drag and drop can be added in Task 5.2.
           </p>
         </div>
-        <button
-          onClick={() => void handleCreateList()}
-          disabled={isListsMutating}
-          className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:opacity-60"
-        >
-          <Plus size={16} className="mr-2" />
-          Add List
-        </button>
+        {canManageLists ? (
+          <button
+            onClick={() => void handleCreateList()}
+            disabled={isListsMutating}
+            className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:opacity-60"
+          >
+            <Plus size={16} className="mr-2" />
+            Add List
+          </button>
+        ) : null}
       </div>
 
       {boardError ? (
@@ -154,14 +215,16 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
           <p className="mt-2 text-sm text-muted-foreground">
             Start your project board by creating the first column.
           </p>
-          <button
-            onClick={() => void handleCreateList()}
-            disabled={isListsMutating}
-            className="mt-6 inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:opacity-60"
-          >
-            <Plus size={16} className="mr-2" />
-            Create first list
-          </button>
+          {canManageLists ? (
+            <button
+              onClick={() => void handleCreateList()}
+              disabled={isListsMutating}
+              className="mt-6 inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:opacity-60"
+            >
+              <Plus size={16} className="mr-2" />
+              Create first list
+            </button>
+          ) : null}
         </div>
       ) : null}
 
@@ -179,22 +242,24 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
                       {listTasks.length} {listTasks.length === 1 ? "task" : "tasks"}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => void handleRenameList(list.id, list.name)}
-                      disabled={isListsMutating}
-                      className="rounded-md border border-border px-2 py-1 text-xs text-foreground transition-colors hover:bg-muted disabled:opacity-60"
-                    >
-                      Rename
-                    </button>
-                    <button
-                      onClick={() => void handleArchiveList(list.id, list.name)}
-                      disabled={isListsMutating}
-                      className="rounded-md border border-border px-2 py-1 text-xs text-foreground transition-colors hover:bg-muted disabled:opacity-60"
-                    >
-                      <MoreHorizontal size={14} />
-                    </button>
-                  </div>
+                  {canManageLists ? (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => void handleRenameList(list.id, list.name)}
+                        disabled={isListsMutating}
+                        className="rounded-md border border-border px-2 py-1 text-xs text-foreground transition-colors hover:bg-muted disabled:opacity-60"
+                      >
+                        Rename
+                      </button>
+                      <button
+                        onClick={() => void handleDeleteList(list.id, list.name)}
+                        disabled={isListsMutating}
+                        className="rounded-md border border-border px-2 py-1 text-xs text-foreground transition-colors hover:bg-muted disabled:opacity-60"
+                      >
+                        <MoreHorizontal size={14} />
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="mt-4 space-y-3">
@@ -205,34 +270,76 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
                   ) : null}
 
                   {listTasks.map((task) => (
-                    <article key={task.id} className="rounded-lg border border-border bg-background p-4 shadow-sm">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h4 className="font-medium text-foreground">{task.title}</h4>
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            {task.description ?? "No description"}
-                          </p>
-                        </div>
-                        <span className={`rounded-full px-2 py-1 text-xs font-medium ${getTaskStatusTone(task.status)}`}>
-                          {task.status.replace("_", " ")}
-                        </span>
-                      </div>
-                      <div className="mt-3 flex items-center justify-between text-xs">
-                        <span className={getPriorityTone(task.priority)}>
-                          Priority: {task.priority}
-                        </span>
-                        <span className="text-muted-foreground">
-                          Position {task.position}
-                        </span>
-                      </div>
-                    </article>
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      onEdit={
+                        canManageTasks
+                          ? () =>
+                              setModalState({
+                                mode: "edit",
+                                listId: list.id,
+                                listName: list.name,
+                                task: {
+                                  id: task.id,
+                                  title: task.title,
+                                  description: task.description,
+                                  status: task.status,
+                                  priority: task.priority,
+                                  dueDate: task.dueDate,
+                                },
+                              })
+                          : undefined
+                      }
+                      onDelete={canManageTasks ? () => void handleDeleteTask(task.id, task.title) : undefined}
+                    />
                   ))}
+
+                  {canManageTasks ? (
+                    <button
+                      onClick={() =>
+                        setModalState({
+                          mode: "create",
+                          listId: list.id,
+                          listName: list.name,
+                        })
+                      }
+                      disabled={isMutating}
+                      className="w-full rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted-foreground transition-colors hover:bg-muted disabled:opacity-60"
+                    >
+                      <span className="inline-flex items-center">
+                        <Plus size={14} className="mr-2" />
+                        Add task
+                      </span>
+                    </button>
+                  ) : null}
                 </div>
               </section>
             )
           })}
         </div>
       ) : null}
+
+      <CreateTaskModal
+        isOpen={modalState !== null}
+        mode={modalState?.mode ?? "create"}
+        listName={modalState?.listName ?? ""}
+        initialTask={
+          modalState?.mode === "edit"
+            ? {
+                id: modalState.task.id,
+                title: modalState.task.title,
+                description: modalState.task.description,
+                status: modalState.task.status,
+                priority: modalState.task.priority,
+                dueDate: modalState.task.dueDate,
+              }
+            : null
+        }
+        isSubmitting={isTasksMutating}
+        onClose={() => setModalState(null)}
+        onSubmit={handleTaskSubmit}
+      />
     </div>
   )
 }

@@ -186,7 +186,7 @@ export function useLists(projectId: string) {
     [lists, startTransition],
   );
 
-  const archiveList = useCallback(
+  const deleteList = useCallback(
     async (listId: string) => {
       const previousLists = lists;
 
@@ -216,8 +216,8 @@ export function useLists(projectId: string) {
       refetchLists: fetchLists,
       createList,
       updateList,
-      archiveList,
+      deleteList,
     }),
-    [lists, isLoading, error, isPending, fetchLists, createList, updateList, archiveList],
+    [lists, isLoading, error, isPending, fetchLists, createList, updateList, deleteList],
   );
 }

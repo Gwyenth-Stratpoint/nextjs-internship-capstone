@@ -1,7 +1,11 @@
-import { and, asc, eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { lists, projectMembers } from "@/lib/db/schema";
+import { lists } from "@/lib/db/schema";
+import {
+  assertProjectRole,
+  getProjectMembership,
+} from "@/lib/server/project-permissions";
 
 type CreateListInput = {
   projectId: string;
@@ -15,18 +19,6 @@ type UpdateListInput = Partial<{
   archived: boolean;
 }>;
 
-async function assertProjectMember(projectId: string, userId: string) {
-  const [membership] = await db
-    .select({ userId: projectMembers.userId })
-    .from(projectMembers)
-    .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId)))
-    .limit(1);
-
-  if (!membership) {
-    throw new Error("Forbidden");
-  }
-}
-
 async function getAccessibleList(listId: string, userId: string) {
   const [list] = await db
     .select({
@@ -39,10 +31,6 @@ async function getAccessibleList(listId: string, userId: string) {
       updatedAt: lists.updatedAt,
     })
     .from(lists)
-    .innerJoin(
-      projectMembers,
-      and(eq(projectMembers.projectId, lists.projectId), eq(projectMembers.userId, userId)),
-    )
     .where(eq(lists.id, listId))
     .limit(1);
 
@@ -50,11 +38,22 @@ async function getAccessibleList(listId: string, userId: string) {
     throw new Error("NotFound");
   }
 
+  const membership = await getProjectMembership(list.projectId, userId);
+
+  if (!membership) {
+    throw new Error("Forbidden");
+  }
+
   return list;
 }
 
 export async function listProjectLists(projectId: string, userId: string) {
-  await assertProjectMember(projectId, userId);
+  await assertProjectRole(projectId, userId, [
+    "owner",
+    "admin",
+    "member",
+    "viewer",
+  ]);
 
   return db
     .select()
@@ -63,8 +62,11 @@ export async function listProjectLists(projectId: string, userId: string) {
     .orderBy(asc(lists.position), asc(lists.createdAt));
 }
 
-export async function createProjectList(userId: string, input: CreateListInput) {
-  await assertProjectMember(input.projectId, userId);
+export async function createProjectList(
+  userId: string,
+  input: CreateListInput,
+) {
+  await assertProjectRole(input.projectId, userId, ["owner", "admin"]);
 
   const [list] = await db
     .insert(lists)
@@ -82,10 +84,15 @@ export async function createProjectList(userId: string, input: CreateListInput) 
   return list;
 }
 
-export async function updateProjectList(listId: string, userId: string, input: UpdateListInput) {
-  await getAccessibleList(listId, userId);
+export async function updateProjectList(
+  listId: string,
+  userId: string,
+  input: UpdateListInput,
+) {
+  const existingList = await getAccessibleList(listId, userId);
+  await assertProjectRole(existingList.projectId, userId, ["owner", "admin"]);
 
-  const [list] = await db
+  const [updatedList] = await db
     .update(lists)
     .set({
       ...input,
@@ -94,13 +101,25 @@ export async function updateProjectList(listId: string, userId: string, input: U
     .where(eq(lists.id, listId))
     .returning();
 
-  if (!list) {
+  if (!updatedList) {
     throw new Error("NotFound");
   }
 
-  return list;
+  return updatedList;
 }
 
-export async function archiveProjectList(listId: string, userId: string) {
-  return updateProjectList(listId, userId, { archived: true });
+export async function deleteProjectList(listId: string, userId: string) {
+  const existingList = await getAccessibleList(listId, userId);
+  await assertProjectRole(existingList.projectId, userId, ["owner", "admin"]);
+
+  const [deletedList] = await db
+    .delete(lists)
+    .where(eq(lists.id, listId))
+    .returning();
+
+  if (!deletedList) {
+    throw new Error("NotFound");
+  }
+
+  return deletedList;
 }

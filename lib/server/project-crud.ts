@@ -2,6 +2,7 @@ import { and, desc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { projectMembers, projects, workspaceMembers, workspaces } from "@/lib/db/schema";
+import { assertProjectRole } from "@/lib/server/project-permissions";
 
 type CreateProjectInput = {
   name: string;
@@ -62,25 +63,7 @@ async function getOrCreateOwnedWorkspace(userId: string) {
   return workspace.id;
 }
 
-async function assertProjectOwner(projectId: string, userId: string) {
-  const [membership] = await db
-    .select({ projectId: projectMembers.projectId })
-    .from(projectMembers)
-    .where(
-      and(
-        eq(projectMembers.projectId, projectId),
-        eq(projectMembers.userId, userId),
-        eq(projectMembers.role, "owner"),
-      ),
-    )
-    .limit(1);
-
-  if (!membership) {
-    throw new Error("Forbidden");
-  }
-}
-
-export async function listOwnedProjects(userId: string) {
+export async function listAccessibleProjects(userId: string) {
   return db
     .select({
       id: projects.id,
@@ -93,6 +76,7 @@ export async function listOwnedProjects(userId: string) {
       createdAt: projects.createdAt,
       updatedAt: projects.updatedAt,
       archived: projects.archived,
+      role: projectMembers.role,
     })
     .from(projects)
     .innerJoin(
@@ -100,22 +84,44 @@ export async function listOwnedProjects(userId: string) {
       and(
         eq(projectMembers.projectId, projects.id),
         eq(projectMembers.userId, userId),
-        eq(projectMembers.role, "owner"),
       ),
     )
     .orderBy(desc(projects.createdAt));
 }
 
-export async function getOwnedProjectById(projectId: string, userId: string) {
-  await assertProjectOwner(projectId, userId);
+export async function getAccessibleProjectById(projectId: string, userId: string) {
+  const membership = await assertProjectRole(projectId, userId, ["owner", "admin", "member", "viewer"]);
 
-  const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
+  const [project] = await db
+    .select({
+      id: projects.id,
+      workspaceId: projects.workspaceId,
+      name: projects.name,
+      description: projects.description,
+      key: projects.key,
+      dueDate: projects.dueDate,
+      createdById: projects.createdById,
+      createdAt: projects.createdAt,
+      updatedAt: projects.updatedAt,
+      archived: projects.archived,
+      role: projectMembers.role,
+    })
+    .from(projects)
+    .innerJoin(
+      projectMembers,
+      and(eq(projectMembers.projectId, projects.id), eq(projectMembers.userId, userId)),
+    )
+    .where(eq(projects.id, projectId))
+    .limit(1);
 
   if (!project) {
     throw new Error("NotFound");
   }
 
-  return project;
+  return {
+    ...project,
+    role: membership.role,
+  };
 }
 
 export async function createOwnedProject(userId: string, input: CreateProjectInput) {
@@ -152,7 +158,7 @@ export async function createOwnedProject(userId: string, input: CreateProjectInp
 }
 
 export async function updateOwnedProject(projectId: string, userId: string, input: UpdateProjectInput) {
-  await assertProjectOwner(projectId, userId);
+  await assertProjectRole(projectId, userId, ["owner", "admin"]);
 
   const [project] = await db
     .update(projects)
@@ -171,7 +177,7 @@ export async function updateOwnedProject(projectId: string, userId: string, inpu
 }
 
 export async function deleteOwnedProject(projectId: string, userId: string) {
-  await assertProjectOwner(projectId, userId);
+  await assertProjectRole(projectId, userId, ["owner", "admin"]);
 
   const [project] = await db.delete(projects).where(eq(projects.id, projectId)).returning();
 

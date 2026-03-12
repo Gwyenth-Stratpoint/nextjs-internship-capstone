@@ -10,6 +10,7 @@ type Project = {
   id: string;
   name: string;
   description: string | null;
+  role: "owner" | "admin" | "member" | "viewer";
 };
 
 type ApiResponse<T> =
@@ -103,7 +104,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
         </div>
       </div>
 
-      <KanbanBoard projectId={id} />
+      <KanbanBoard projectId={id} role={project.role} />
     </div>
   );
 }

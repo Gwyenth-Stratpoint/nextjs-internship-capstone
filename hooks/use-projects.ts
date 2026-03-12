@@ -19,6 +19,7 @@ type ProjectFromApi = {
   createdAt: string;
   updatedAt: string;
   archived: boolean;
+  role: "owner" | "admin" | "member" | "viewer";
 };
 
 type ApiSuccess<T> = {
@@ -63,6 +64,7 @@ function normalizeProject(input: any): ProjectFromApi {
     createdAt: new Date(input.createdAt).toISOString(),
     updatedAt: new Date(input.updatedAt).toISOString(),
     archived: Boolean(input.archived),
+    role: input.role ?? "viewer",
   };
 }
 

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { requireDbUserId } from "@/lib/auth";
-import { getOwnedProjectById } from "@/lib/server/project-crud";
+import { getAccessibleProjectById } from "@/lib/server/project-crud";
 
 const paramsSchema = z.object({
   id: z.string().uuid("Invalid project id"),
@@ -15,7 +15,7 @@ export async function GET(_request: Request, context: RouteContext) {
   try {
     const userId = await requireDbUserId();
     const { id } = paramsSchema.parse(await context.params);
-    const data = await getOwnedProjectById(id, userId);
+    const data = await getAccessibleProjectById(id, userId);
     return Response.json({ success: true, data }, { status: 200 });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -56,4 +56,3 @@ export async function GET(_request: Request, context: RouteContext) {
     );
   }
 }
-

@@ -1,7 +1,8 @@
-import { and, asc, eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { projectMembers, tasks } from "@/lib/db/schema";
+import { tasks } from "@/lib/db/schema";
+import { assertProjectRole, getProjectMembership } from "@/lib/server/project-permissions";
 
 type CreateTaskInput = {
   projectId: string;
@@ -31,18 +32,6 @@ type UpdateTaskInput = Partial<{
   archived: boolean;
 }>;
 
-async function assertProjectMember(projectId: string, userId: string) {
-  const [membership] = await db
-    .select({ userId: projectMembers.userId })
-    .from(projectMembers)
-    .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId)))
-    .limit(1);
-
-  if (!membership) {
-    throw new Error("Forbidden");
-  }
-}
-
 async function getAccessibleTask(taskId: string, userId: string) {
   const [task] = await db
     .select({
@@ -63,10 +52,6 @@ async function getAccessibleTask(taskId: string, userId: string) {
       updatedAt: tasks.updatedAt,
     })
     .from(tasks)
-    .innerJoin(
-      projectMembers,
-      and(eq(projectMembers.projectId, tasks.projectId), eq(projectMembers.userId, userId)),
-    )
     .where(eq(tasks.id, taskId))
     .limit(1);
 
@@ -74,17 +59,23 @@ async function getAccessibleTask(taskId: string, userId: string) {
     throw new Error("NotFound");
   }
 
+  const membership = await getProjectMembership(task.projectId, userId);
+
+  if (!membership) {
+    throw new Error("Forbidden");
+  }
+
   return task;
 }
 
 export async function listProjectTasks(projectId: string, userId: string) {
-  await assertProjectMember(projectId, userId);
+  await assertProjectRole(projectId, userId, ["owner", "admin", "member", "viewer"]);
 
   return db.select().from(tasks).where(eq(tasks.projectId, projectId)).orderBy(asc(tasks.createdAt));
 }
 
 export async function createProjectTask(userId: string, input: CreateTaskInput) {
-  await assertProjectMember(input.projectId, userId);
+  await assertProjectRole(input.projectId, userId, ["owner", "admin", "member"]);
 
   const [task] = await db
     .insert(tasks)
@@ -112,6 +103,7 @@ export async function createProjectTask(userId: string, input: CreateTaskInput) 
 
 export async function updateProjectTask(taskId: string, userId: string, input: UpdateTaskInput) {
   const existingTask = await getAccessibleTask(taskId, userId);
+  await assertProjectRole(existingTask.projectId, userId, ["owner", "admin", "member"]);
 
   const [task] = await db
     .update(tasks)
@@ -131,13 +123,14 @@ export async function updateProjectTask(taskId: string, userId: string, input: U
 }
 
 export async function deleteProjectTask(taskId: string, userId: string) {
-  await getAccessibleTask(taskId, userId);
+  const task = await getAccessibleTask(taskId, userId);
+  await assertProjectRole(task.projectId, userId, ["owner", "admin", "member"]);
 
-  const [task] = await db.delete(tasks).where(eq(tasks.id, taskId)).returning();
+  const [deletedTask] = await db.delete(tasks).where(eq(tasks.id, taskId)).returning();
 
-  if (!task) {
+  if (!deletedTask) {
     throw new Error("NotFound");
   }
 
-  return task;
+  return deletedTask;
 }

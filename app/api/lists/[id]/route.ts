@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { requireDbUserId } from "@/lib/auth";
 import { listUpdateSchema } from "@/lib/validations";
-import { archiveProjectList, updateProjectList } from "@/lib/server/list-crud";
+import { deleteProjectList, updateProjectList } from "@/lib/server/list-crud";
 
 const paramsSchema = z.object({
   id: z.string().uuid("Invalid list id"),
@@ -64,7 +64,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
   try {
     const userId = await requireDbUserId();
     const { id } = paramsSchema.parse(await context.params);
-    const data = await archiveProjectList(id, userId);
+    const data = await deleteProjectList(id, userId);
     return Response.json({ success: true, data }, { status: 200 });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -99,7 +99,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
     return Response.json(
       {
         success: false,
-        error: { code: "INTERNAL_SERVER_ERROR", message: "Failed to archive list" },
+        error: { code: "INTERNAL_SERVER_ERROR", message: "Failed to delete list" },
       },
       { status: 500 },
     );

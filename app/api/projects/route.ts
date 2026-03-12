@@ -1,10 +1,10 @@
 import { requireDbUserId } from "@/lib/auth";
-import { listOwnedProjects } from "@/lib/server/project-crud";
+import { listAccessibleProjects } from "@/lib/server/project-crud";
 
 export async function GET() {
   try {
     const userId = await requireDbUserId();
-    const data = await listOwnedProjects(userId);
+    const data = await listAccessibleProjects(userId);
     return Response.json({ success: true, data }, { status: 200 });
   } catch (error) {
     if (error instanceof Error && error.message === "Unauthorized") {
@@ -24,4 +24,3 @@ export async function GET() {
     );
   }
 }
-
