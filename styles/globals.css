@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Segoe UI", "Trebuchet MS", Helvetica, sans-serif;
 }
 
 @layer utilities {
@@ -14,39 +14,39 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --background: 226 100% 98%;
+    --foreground: 228 24% 15%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
+    --primary: 34 87% 61%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
+    --secondary: 224 58% 96%;
     --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
+    --muted: 228 38% 95%;
+    --muted-foreground: 224 14% 44%;
+    --accent: 226 53% 95%;
     --accent-foreground: 0 0% 9%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
+    --border: 0 0% 100%;
+    --input: 220 42% 91%;
+    --ring: 34 87% 61%;
+    --chart-1: 34 87% 61%;
+    --chart-2: 196 87% 59%;
+    --chart-3: 332 82% 74%;
+    --chart-4: 36 100% 74%;
+    --chart-5: 152 62% 63%;
+    --radius: 1rem;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 228 24% 15%;
+    --sidebar-primary: 34 87% 61%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 224 58% 96%;
+    --sidebar-accent-foreground: 228 24% 15%;
+    --sidebar-border: 0 0% 100%;
+    --sidebar-ring: 241 71% 63%;
   }
   .dark {
     --background: 0 0% 3.9%;
@@ -81,6 +81,41 @@ body {
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer components {
+  .glass-page {
+    background:
+      radial-gradient(circle at 10% 10%, rgba(172, 153, 255, 0.38), transparent 26%),
+      radial-gradient(circle at 44% 0%, rgba(255, 182, 211, 0.3), transparent 28%),
+      radial-gradient(circle at 88% 10%, rgba(255, 214, 171, 0.34), transparent 24%),
+      radial-gradient(circle at 18% 82%, rgba(177, 223, 255, 0.26), transparent 24%),
+      linear-gradient(180deg, #f8f3ff 0%, #f5f7ff 46%, #eef4ff 100%);
+  }
+
+  .glass-shell {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(224, 231, 255, 0.95);
+    box-shadow: 0 18px 42px rgba(184, 191, 217, 0.18);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+  }
+
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(224, 231, 255, 0.92);
+    box-shadow: 0 16px 38px rgba(178, 188, 219, 0.16);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.99);
+    border: 1px solid rgba(226, 232, 247, 0.95);
+    box-shadow:
+      0 14px 30px rgba(182, 191, 220, 0.14),
+      0 2px 6px rgba(196, 204, 226, 0.16);
   }
 }
 

@@ -7,6 +7,7 @@ type ListFromApi = {
   projectId: string;
   name: string;
   position: number;
+  category: "todo" | "in_progress" | "done";
   archived: boolean;
   createdAt: string;
   updatedAt: string;
@@ -31,13 +32,20 @@ type CreateListInput = {
   projectId: string;
   name: string;
   position?: number;
+  category?: "todo" | "in_progress" | "done";
 };
 
 type UpdateListInput = Partial<{
   name: string;
   position: number;
   archived: boolean;
+  category: "todo" | "in_progress" | "done";
 }>;
+
+type ReorderListsInput = {
+  projectId?: string;
+  orderedListIds: string[];
+};
 
 function normalizeList(input: any): ListFromApi {
   return {
@@ -45,6 +53,7 @@ function normalizeList(input: any): ListFromApi {
     projectId: input.projectId,
     name: input.name,
     position: Number(input.position ?? 0),
+    category: input.category ?? "todo",
     archived: Boolean(input.archived),
     createdAt: new Date(input.createdAt).toISOString(),
     updatedAt: new Date(input.updatedAt).toISOString(),
@@ -112,6 +121,7 @@ export function useLists(projectId: string) {
         projectId: resolvedProjectId,
         name: input.name,
         position: input.position ?? lists.length,
+        category: input.category ?? "todo",
         archived: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -130,12 +140,11 @@ export function useLists(projectId: string) {
             projectId: resolvedProjectId,
             name: input.name,
             position: input.position ?? lists.length,
+            category: input.category ?? "todo",
           }),
         });
         const created = normalizeList(await parseApiResponse<ListFromApi>(response));
-        startTransition(() => {
-          setLists((current) => current.map((list) => (list.id === optimisticList.id ? created : list)));
-        });
+        await fetchLists();
         return created;
       } catch (err) {
         startTransition(() => {
@@ -144,7 +153,7 @@ export function useLists(projectId: string) {
         throw err;
       }
     },
-    [lists, projectId, startTransition],
+    [fetchLists, lists, projectId, startTransition],
   );
 
   const updateList = useCallback(
@@ -172,9 +181,13 @@ export function useLists(projectId: string) {
           body: JSON.stringify(input),
         });
         const updated = normalizeList(await parseApiResponse<ListFromApi>(response));
-        startTransition(() => {
-          setLists((current) => current.map((list) => (list.id === listId ? updated : list)));
-        });
+        if (input.position !== undefined) {
+          await fetchLists();
+        } else {
+          startTransition(() => {
+            setLists((current) => current.map((list) => (list.id === listId ? updated : list)));
+          });
+        }
         return updated;
       } catch (err) {
         startTransition(() => {
@@ -183,7 +196,7 @@ export function useLists(projectId: string) {
         throw err;
       }
     },
-    [lists, startTransition],
+    [fetchLists, lists, startTransition],
   );
 
   const deleteList = useCallback(
@@ -197,6 +210,7 @@ export function useLists(projectId: string) {
       try {
         const response = await fetch(`/api/lists/${listId}`, { method: "DELETE" });
         await parseApiResponse<ListFromApi>(response);
+        await fetchLists();
       } catch (err) {
         startTransition(() => {
           setLists(previousLists);
@@ -204,7 +218,53 @@ export function useLists(projectId: string) {
         throw err;
       }
     },
-    [lists, startTransition],
+    [fetchLists, lists, startTransition],
+  );
+
+  const reorderLists = useCallback(
+    async (input: ReorderListsInput) => {
+      const resolvedProjectId = input.projectId ?? projectId;
+
+      if (!resolvedProjectId) {
+        throw new Error("Project id is required");
+      }
+
+      const previousLists = lists;
+      const reordered = input.orderedListIds
+        .map((id) => previousLists.find((list) => list.id === id))
+        .filter((list): list is ListFromApi => Boolean(list))
+        .map((list, index) => ({
+          ...list,
+          position: index,
+          updatedAt: new Date().toISOString(),
+        }));
+
+      startTransition(() => {
+        setLists(reordered);
+      });
+
+      try {
+        const response = await fetch("/api/lists/reorder", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            projectId: resolvedProjectId,
+            orderedListIds: input.orderedListIds,
+          }),
+        });
+        const data = await parseApiResponse<ListFromApi[]>(response);
+        startTransition(() => {
+          setLists(data.map(normalizeList));
+        });
+        return data.map(normalizeList);
+      } catch (err) {
+        startTransition(() => {
+          setLists(previousLists);
+        });
+        throw err;
+      }
+    },
+    [lists, projectId, startTransition],
   );
 
   return useMemo(
@@ -217,7 +277,8 @@ export function useLists(projectId: string) {
       createList,
       updateList,
       deleteList,
+      reorderLists,
     }),
-    [lists, isLoading, error, isPending, fetchLists, createList, updateList, deleteList],
+    [lists, isLoading, error, isPending, fetchLists, createList, updateList, deleteList, reorderLists],
   );
 }

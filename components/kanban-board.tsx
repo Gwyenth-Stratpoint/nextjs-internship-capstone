@@ -29,7 +29,76 @@ type ModalState =
     }
   | null
 
+type ListActionsProps = {
+  onRename?: () => void
+  onEditCategory?: () => void
+  onDelete?: () => void
+  isDisabled?: boolean
+}
+
+function ListActions({
+  onRename,
+  onEditCategory,
+  onDelete,
+  isDisabled = false,
+}: ListActionsProps) {
+  const canRename = typeof onRename === "function"
+  const canEditCategory = typeof onEditCategory === "function"
+  const canDelete = typeof onDelete === "function"
+
+  if (!canRename && !canEditCategory && !canDelete) {
+    return null
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      {canRename ? (
+        <button
+          onClick={onRename}
+          disabled={isDisabled}
+          className="rounded-md border border-border px-2 py-1 text-xs text-foreground transition-colors hover:bg-muted disabled:opacity-60"
+        >
+          Rename
+        </button>
+      ) : null}
+      {canEditCategory ? (
+        <button
+          onClick={onEditCategory}
+          disabled={isDisabled}
+          className="rounded-md border border-border px-2 py-1 text-xs text-foreground transition-colors hover:bg-muted disabled:opacity-60"
+        >
+          Category
+        </button>
+      ) : null}
+      {canDelete ? (
+        <button
+          onClick={onDelete}
+          disabled={isDisabled}
+          className="rounded-md border border-border px-2 py-1 text-xs text-foreground transition-colors hover:bg-muted disabled:opacity-60"
+        >
+          <MoreHorizontal size={14} />
+        </button>
+      ) : null}
+    </div>
+  )
+}
+
 export function KanbanBoard({ projectId, role }: { projectId: string; role: ProjectRole }) {
+  const categoryMeta: Record<"todo" | "in_progress" | "done", { label: string; className: string }> = {
+    todo: {
+      label: "To Do",
+      className: "bg-amber-100 text-amber-800",
+    },
+    in_progress: {
+      label: "In Progress",
+      className: "bg-sky-100 text-sky-800",
+    },
+    done: {
+      label: "Done",
+      className: "bg-emerald-100 text-emerald-800",
+    },
+  }
+
   // Column data for the current project board.
   const {
     lists,
@@ -86,10 +155,17 @@ export function KanbanBoard({ projectId, role }: { projectId: string; role: Proj
     const name = window.prompt("List name")
     if (!name?.trim()) return
 
+    const categoryInput = window.prompt('List category: "todo", "in_progress", or "done"', "todo")
+    const normalizedCategory =
+      categoryInput === "todo" || categoryInput === "in_progress" || categoryInput === "done"
+        ? categoryInput
+        : "todo"
+
     try {
       await createList({
         name: name.trim(),
         position: activeLists.length,
+        category: normalizedCategory,
       })
     } catch (err) {
       window.alert(err instanceof Error ? err.message : "Failed to create list")
@@ -115,6 +191,29 @@ export function KanbanBoard({ projectId, role }: { projectId: string; role: Proj
       await deleteList(listId)
     } catch (err) {
       window.alert(err instanceof Error ? err.message : "Failed to delete list")
+    }
+  }
+
+  async function handleCategoryUpdate(
+    listId: string,
+    currentCategory: "todo" | "in_progress" | "done",
+  ) {
+    const categoryInput = window.prompt('Set category: "todo", "in_progress", or "done"', currentCategory)
+    if (!categoryInput?.trim()) return
+
+    const normalizedCategory =
+      categoryInput === "todo" || categoryInput === "in_progress" || categoryInput === "done"
+        ? categoryInput
+        : null
+
+    if (!normalizedCategory || normalizedCategory === currentCategory) return
+
+    try {
+      await updateList(listId, {
+        category: normalizedCategory,
+      })
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "Failed to update list category")
     }
   }
 
@@ -232,34 +331,31 @@ export function KanbanBoard({ projectId, role }: { projectId: string; role: Proj
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
           {activeLists.map((list) => {
             const listTasks = tasksByList.get(list.id) ?? []
+            const onRenameList = canManageLists ? () => void handleRenameList(list.id, list.name) : undefined
+            const onDeleteList = canManageLists ? () => void handleDeleteList(list.id, list.name) : undefined
+            const onRenameCategory = canManageLists ? () => void handleCategoryUpdate(list.id, list.category) : undefined
+            const badge = categoryMeta[list.category]
 
             return (
               <section key={list.id} className="rounded-xl border border-border bg-card p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="text-lg font-semibold text-foreground">{list.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-semibold text-foreground">{list.name}</h3>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}>
+                        {badge.label}
+                      </span>
+                    </div>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {listTasks.length} {listTasks.length === 1 ? "task" : "tasks"}
                     </p>
                   </div>
-                  {canManageLists ? (
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => void handleRenameList(list.id, list.name)}
-                        disabled={isListsMutating}
-                        className="rounded-md border border-border px-2 py-1 text-xs text-foreground transition-colors hover:bg-muted disabled:opacity-60"
-                      >
-                        Rename
-                      </button>
-                      <button
-                        onClick={() => void handleDeleteList(list.id, list.name)}
-                        disabled={isListsMutating}
-                        className="rounded-md border border-border px-2 py-1 text-xs text-foreground transition-colors hover:bg-muted disabled:opacity-60"
-                      >
-                        <MoreHorizontal size={14} />
-                      </button>
-                    </div>
-                  ) : null}
+                  <ListActions
+                    onRename={onRenameList}
+                    onEditCategory={onRenameCategory}
+                    onDelete={onDeleteList}
+                    isDisabled={isListsMutating}
+                  />
                 </div>
 
                 <div className="mt-4 space-y-3">

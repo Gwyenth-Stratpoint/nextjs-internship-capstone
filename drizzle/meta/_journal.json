@@ -8,6 +8,20 @@
       "when": 1772737988663,
       "tag": "0000_gifted_ego",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1773500000000,
+      "tag": "0001_list_categories",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773453090615,
+      "tag": "0002_tired_leper_queen",
+      "breakpoints": true
     }
   ]
 }

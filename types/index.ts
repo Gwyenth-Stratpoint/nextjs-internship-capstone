@@ -26,6 +26,7 @@ export interface List {
   name: string
   projectId: string
   position: number
+  category: "todo" | "in_progress" | "done"
   createdAt: Date
   updatedAt: Date
   tasks: Task[]

@@ -15,6 +15,7 @@ const createProjectInputSchema = z.object({
     .nullable()
     .optional(),
   dueDate: z.coerce.date().nullable().optional(),
+  template: z.enum(["simple", "software"]).optional(),
 });
 
 const updateProjectInputSchema = z
@@ -55,4 +56,3 @@ export async function deleteProjectAction(projectId: string) {
   const id = projectIdSchema.parse(projectId);
   return deleteOwnedProject(id, userId);
 }
-

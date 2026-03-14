@@ -7,7 +7,9 @@ import { useMemo, useState } from "react";
 import { useProjects } from "@/hooks/use-projects";
 
 export default function ProjectsPage() {
+  // Project collection and mutations for the projects listing page.
   const { projects, isLoading, error, isMutating, createProject, updateProject, deleteProject } = useProjects();
+  // Search state for client-side filtering of visible projects.
   const [search, setSearch] = useState("");
 
   const filteredProjects = useMemo(() => {
@@ -27,8 +29,11 @@ export default function ProjectsPage() {
     const name = window.prompt("Project name");
     if (!name?.trim()) return;
 
+    const templateInput = window.prompt('Project template: "simple" or "software"', "simple");
+    const template = templateInput === "software" ? "software" : "simple";
+
     try {
-      await createProject({ name: name.trim() });
+      await createProject({ name: name.trim(), template });
     } catch (err) {
       window.alert(err instanceof Error ? err.message : "Failed to create project");
     }
@@ -107,45 +112,57 @@ export default function ProjectsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredProjects.map((project) => (
-          <div
-            key={project.id}
-            className="bg-card rounded-lg border border-border p-6 hover:shadow-lg transition-shadow"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className={`w-3 h-3 rounded-full ${project.archived ? "bg-gray-400" : "bg-primary"}`}></div>
-              <span className="text-xs text-muted-foreground">{project.archived ? "Archived" : "Active"}</span>
-            </div>
+          (() => {
+            const canManageProject = project.role === "owner" || project.role === "admin";
 
-            <Link href={`/projects/${project.id}`} className="text-lg font-semibold text-foreground mb-2 block hover:underline">
-              {project.name}
-            </Link>
+            return (
+              <div
+                key={project.id}
+                className="bg-card rounded-lg border border-border p-6 hover:shadow-lg transition-shadow"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className={`w-3 h-3 rounded-full ${project.archived ? "bg-gray-400" : "bg-primary"}`}></div>
+                  <span className="text-xs text-muted-foreground">
+                    {project.archived ? "Archived" : "Active"} • {project.role}
+                  </span>
+                </div>
 
-            <p className="text-sm text-muted-foreground mb-4">{project.description ?? "No description"}</p>
+                <Link href={`/projects/${project.id}`} className="text-lg font-semibold text-foreground mb-2 block hover:underline">
+                  {project.name}
+                </Link>
 
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => void handleRename(project.id, project.name)}
-                disabled={isMutating}
-                className="px-3 py-1.5 text-xs border border-border rounded hover:bg-muted disabled:opacity-60"
-              >
-                Rename
-              </button>
-              <button
-                onClick={() => void handleArchive(project.id, project.archived)}
-                disabled={isMutating}
-                className="px-3 py-1.5 text-xs border border-border rounded hover:bg-muted disabled:opacity-60"
-              >
-                {project.archived ? "Unarchive" : "Archive"}
-              </button>
-              <button
-                onClick={() => void handleDelete(project.id, project.name)}
-                disabled={isMutating}
-                className="px-3 py-1.5 text-xs border border-red-300 text-red-700 rounded hover:bg-red-50 disabled:opacity-60"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
+                <p className="text-sm text-muted-foreground mb-4">{project.description ?? "No description"}</p>
+
+                {canManageProject ? (
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => void handleRename(project.id, project.name)}
+                      disabled={isMutating}
+                      className="px-3 py-1.5 text-xs border border-border rounded hover:bg-muted disabled:opacity-60"
+                    >
+                      Rename
+                    </button>
+                    <button
+                      onClick={() => void handleArchive(project.id, project.archived)}
+                      disabled={isMutating}
+                      className="px-3 py-1.5 text-xs border border-border rounded hover:bg-muted disabled:opacity-60"
+                    >
+                      {project.archived ? "Unarchive" : "Archive"}
+                    </button>
+                    <button
+                      onClick={() => void handleDelete(project.id, project.name)}
+                      disabled={isMutating}
+                      className="px-3 py-1.5 text-xs border border-red-300 text-red-700 rounded hover:bg-red-50 disabled:opacity-60"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Read-only access</p>
+                )}
+              </div>
+            );
+          })()
         ))}
       </div>
     </div>

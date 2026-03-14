@@ -6,15 +6,9 @@ TODO: Implementation Notes for Interns: */
 
 import { z } from "zod";
 
-/**
- * Helpers
- */
+
 const uuid = z.string().uuid();
 
-/**
- * Workspace
- * (handy now even if you don't have UI yet)
- */
 export const workspaceSchema = z.object({
   name: z.string().min(1, "Workspace name is required").max(100, "Name too long"),
   slug: z
@@ -26,21 +20,18 @@ export const workspaceSchema = z.object({
 
 export const workspaceMemberSchema = z.object({
   workspaceId: uuid,
-  userId: uuid, // Option A: user must already exist
+  userId: uuid,
   role: z.enum(["owner", "admin", "member"]).optional(),
   title: z.string().max(80, "Title too long").nullable().optional(),
   status: z.enum(["invited", "active", "suspended"]).optional(),
 });
 
-/**
- * Project
- */
+
 export const projectSchema = z.object({
   workspaceId: uuid,
   name: z.string().min(1, "Name is required").max(100, "Name too long"),
   description: z.string().max(500, "Description too long").nullable().optional(),
 
-  // if you use project keys like Jira ("ABC")
   key: z
     .string()
     .max(10, "Key too long")
@@ -48,7 +39,6 @@ export const projectSchema = z.object({
     .nullable()
     .optional(),
 
-  // Accept ISO strings from forms and coerce to Date
   dueDate: z.coerce.date().nullable().optional(),
 });
 
@@ -67,22 +57,20 @@ export const projectUpdateSchema = z
   })
   .refine((v) => Object.keys(v).length > 0, { message: "No fields to update" });
 
-/**
- * Project members (Phase 6.4)
- */
+// Project members (Phase 6.4)
+
 export const projectMemberSchema = z.object({
   projectId: uuid,
   userId: uuid,
   role: z.enum(["owner", "admin", "member", "viewer"]),
 });
 
-/**
- * Lists / Columns
- */
+
 export const listSchema = z.object({
   projectId: uuid,
   name: z.string().min(1, "Name is required").max(60, "Name too long"),
   position: z.number().int().min(0).optional(),
+  category: z.enum(["todo", "in_progress", "done"]).optional(),
 });
 
 export const listUpdateSchema = z
@@ -90,12 +78,16 @@ export const listUpdateSchema = z
     name: z.string().min(1).max(60).optional(),
     position: z.number().int().min(0).optional(),
     archived: z.boolean().optional(),
+    category: z.enum(["todo", "in_progress", "done"]).optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: "No fields to update" });
 
-/**
- * Tasks
- */
+export const listReorderSchema = z.object({
+  projectId: uuid,
+  orderedListIds: z.array(uuid).min(1, "At least one list id is required"),
+});
+
+
 export const taskSchema = z.object({
   projectId: uuid,
   listId: uuid.nullable().optional(),
@@ -131,18 +123,19 @@ export const taskUpdateSchema = z
   })
   .refine((v) => Object.keys(v).length > 0, { message: "No fields to update" });
 
-/**
- * Comments (note: your schema uses `content`)
- */
+export const taskReorderSchema = z.object({
+  projectId: uuid,
+  listId: uuid.nullable(),
+  orderedTaskIds: z.array(uuid).min(1, "At least one task id is required"),
+});
+
+
 export const commentSchema = z.object({
   taskId: uuid,
   content: z.string().min(1, "Comment is required").max(2000, "Comment too long"),
 });
 
-/**
- * User profile update
- * (your users table allows name + avatarUrl)
- */
+
 export const userSchema = z.object({
   name: z.string().max(120, "Name too long").nullable().optional(),
   avatarUrl: z.string().url("Invalid URL").nullable().optional(),

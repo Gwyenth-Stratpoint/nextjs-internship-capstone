@@ -62,8 +62,7 @@ export async function POST(req: Request) {
     }
 
     if (type === "user.deleted") {
-      // Optional: soft delete or delete by clerkId
-      // await db.delete(users).where(eq(users.clerkId, data.id));
+      
     }
 
     return new Response("OK", { status: 200 });

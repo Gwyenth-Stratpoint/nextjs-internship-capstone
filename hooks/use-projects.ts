@@ -42,6 +42,7 @@ type CreateProjectInput = {
   description?: string | null;
   key?: string | null;
   dueDate?: string | null;
+  template?: "simple" | "software";
 };
 
 type UpdateProjectInput = Partial<{
@@ -111,6 +112,7 @@ export function useProjects() {
         description: input.description ?? null,
         key: input.key ?? null,
         dueDate: input.dueDate ?? null,
+        template: input.template ?? "simple",
       });
       const normalized = normalizeProject(created);
       startTransition(() => {

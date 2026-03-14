@@ -13,8 +13,8 @@
     --popover: #ffffff;
     --popover-foreground: #24343a;
 
-    --primary: #df9f3e;
-    --primary-foreground: #2f220e;
+    --primary: #7c83ff;
+    --primary-foreground: #f8f9ff;
 
     --secondary: #365c65;
     --secondary-foreground: #edf3f5;
@@ -30,9 +30,9 @@
 
     --border: #e5ddcb;
     --input: #e5ddcb;
-    --ring: #df9f3e;
+    --ring: #7c83ff;
 
-    --chart-1: #df9f3e;
+    --chart-1: #7c83ff;
     --chart-2: #365c65;
     --chart-3: #c46e3c;
     --chart-4: #9e2a2b;
@@ -40,12 +40,12 @@
 
     --sidebar: #faf6eb;
     --sidebar-foreground: #24343a;
-    --sidebar-primary: #df9f3e;
-    --sidebar-primary-foreground: #2b2110;
+    --sidebar-primary: #7c83ff;
+    --sidebar-primary-foreground: #f8f9ff;
     --sidebar-accent: #f0e5cd;
     --sidebar-accent-foreground: #24343a;
     --sidebar-border: #e5ddcb;
-    --sidebar-ring: #df9f3e;
+    --sidebar-ring: #7c83ff;
 
     --font-sans: "Open Sans", sans-serif;
     --font-serif: Georgia, serif;
@@ -83,8 +83,8 @@
     --popover: #28231d;
     --popover-foreground: #f3ead7;
 
-    --primary: #df9f3e;
-    --primary-foreground: #2b2110;
+    --primary: #8b93ff;
+    --primary-foreground: #f8f9ff;
 
     --secondary: #4e7780;
     --secondary-foreground: #eef4f6;
@@ -100,9 +100,9 @@
 
     --border: #4d4336;
     --input: #4d4336;
-    --ring: #df9f3e;
+    --ring: #8b93ff;
 
-    --chart-1: #df9f3e;
+    --chart-1: #8b93ff;
     --chart-2: #4e7780;
     --chart-3: #c46e3c;
     --chart-4: #9e2a2b;
@@ -110,12 +110,12 @@
 
     --sidebar: #241f1a;
     --sidebar-foreground: #f3ead7;
-    --sidebar-primary: #df9f3e;
-    --sidebar-primary-foreground: #2b2110;
+    --sidebar-primary: #8b93ff;
+    --sidebar-primary-foreground: #f8f9ff;
     --sidebar-accent: #342d24;
     --sidebar-accent-foreground: #f3ead7;
     --sidebar-border: #4d4336;
-    --sidebar-ring: #df9f3e;
+    --sidebar-ring: #8b93ff;
   }
 
 
@@ -143,6 +143,44 @@
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
+  }
+}
+
+@layer components {
+  .glass-page {
+    background:
+      radial-gradient(circle at 10% 10%, rgba(172, 153, 255, 0.38), transparent 26%),
+      radial-gradient(circle at 44% 0%, rgba(255, 182, 211, 0.3), transparent 28%),
+      radial-gradient(circle at 88% 10%, rgba(255, 214, 171, 0.34), transparent 24%),
+      radial-gradient(circle at 18% 82%, rgba(177, 223, 255, 0.26), transparent 24%),
+      linear-gradient(180deg, #f8f3ff 0%, #f5f7ff 46%, #eef4ff 100%);
+  }
+
+  .glass-shell {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(224, 231, 255, 0.95);
+    box-shadow: 0 18px 42px rgba(184, 191, 217, 0.18);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+  }
+
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(224, 231, 255, 0.92);
+    box-shadow: 0 16px 38px rgba(178, 188, 219, 0.16);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+
+  .glass-card {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.68) 100%);
+    border: 1px solid rgba(245, 247, 255, 0.98);
+    box-shadow:
+      0 16px 34px rgba(182, 191, 220, 0.12),
+      0 2px 8px rgba(196, 204, 226, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
   }
 }
 

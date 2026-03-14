@@ -1,7 +1,8 @@
 import { and, desc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { projectMembers, projects, workspaceMembers, workspaces } from "@/lib/db/schema";
+import { lists, projectMembers, projects, workspaceMembers, workspaces } from "@/lib/db/schema";
+import { ensureProjectDefaultLists, type ProjectTemplate } from "@/lib/server/list-crud";
 import { assertProjectRole } from "@/lib/server/project-permissions";
 
 type CreateProjectInput = {
@@ -9,6 +10,7 @@ type CreateProjectInput = {
   description?: string | null;
   dueDate?: Date | null;
   key?: string | null;
+  template?: ProjectTemplate;
 };
 
 type UpdateProjectInput = Partial<{
@@ -149,6 +151,8 @@ export async function createOwnedProject(userId: string, input: CreateProjectInp
       userId,
       role: "owner",
     });
+
+    await ensureProjectDefaultLists(project.id, input.template ?? "simple");
   } catch (error) {
     await db.delete(projects).where(eq(projects.id, project.id));
     throw error;

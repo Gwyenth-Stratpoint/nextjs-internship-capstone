@@ -45,11 +45,11 @@ export function DashboardStats({ stats = fallbackStats }: { stats?: DashboardSta
       {stats.map((stat) => (
         <div
           key={stat.name}
-          className="bg-card overflow-hidden rounded-lg border border-border p-6"
+          className="glass-card overflow-hidden rounded-[24px] p-6"
         >
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="w-8 h-8 bg-primary/15 dark:bg-primary/25 rounded-lg flex items-center justify-center">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/15">
                 <stat.icon className="text-primary" size={20} />
               </div>
             </div>
@@ -80,4 +80,3 @@ export function DashboardStats({ stats = fallbackStats }: { stats?: DashboardSta
     </div>
   )
 }
-

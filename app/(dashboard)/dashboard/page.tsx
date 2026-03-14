@@ -12,7 +12,7 @@ function DashboardProjectsSkeleton() {
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
       {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index} className="rounded-xl border border-border bg-card p-6">
+        <div key={index} className="glass-card rounded-[24px] p-6">
           <div className="mb-4 h-4 w-24 animate-pulse rounded bg-muted" />
           <div className="mb-3 h-6 w-2/3 animate-pulse rounded bg-muted" />
           <div className="mb-2 h-4 w-full animate-pulse rounded bg-muted" />
@@ -93,32 +93,32 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <RecentProjects projects={recentProjects} isLoading={isLoading} />
 
-        <div className="bg-white dark:bg-outer_space-500 rounded-lg border border-french_gray-300 dark:border-payne's_gray-400 p-6">
+        <div className="glass-panel rounded-[28px] p-6">
           <h3 className="text-lg font-semibold text-outer_space-500 dark:text-platinum-500 mb-4">Quick Actions</h3>
           <div className="space-y-3">
             <Link
               href="/projects"
-              className="w-full flex items-center justify-center px-4 py-3 bg-blue_munsell-500 text-white rounded-lg hover:bg-blue_munsell-600 transition-colors"
+              className="w-full flex items-center justify-center rounded-2xl bg-primary px-4 py-3 text-white shadow-[0_12px_24px_rgba(109,93,252,0.25)] transition-colors hover:bg-primary/90"
             >
               <Plus size={20} className="mr-2" />
               Create New Project
             </Link>
             <Link
               href="/team"
-              className="w-full flex items-center justify-center px-4 py-3 border border-french_gray-300 dark:border-payne's_gray-400 text-outer_space-500 dark:text-platinum-500 rounded-lg hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 transition-colors"
+              className="glass-card flex w-full items-center justify-center rounded-2xl px-4 py-3 text-outer_space-500 transition-colors hover:bg-white/75 dark:text-platinum-500"
             >
               <Plus size={20} className="mr-2" />
               Add Team Member
             </Link>
             <Link
               href="/projects"
-              className="w-full flex items-center justify-center px-4 py-3 border border-french_gray-300 dark:border-payne's_gray-400 text-outer_space-500 dark:text-platinum-500 rounded-lg hover:bg-platinum-500 dark:hover:bg-payne's_gray-400 transition-colors"
+              className="glass-card flex w-full items-center justify-center rounded-2xl px-4 py-3 text-outer_space-500 transition-colors hover:bg-white/75 dark:text-platinum-500"
             >
               <Plus size={20} className="mr-2" />
               Create Task
             </Link>
           </div>
-          <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded border border-yellow-200 dark:border-yellow-800">
+          <div className="mt-4 rounded-2xl border border-amber-200/70 bg-amber-50/70 p-4 backdrop-blur-md dark:bg-yellow-900/20">
             <p className="text-sm text-yellow-800 dark:text-yellow-200">
               Project data is live. Team and task counts depend on later TODOs in the instructor files.
             </p>
@@ -141,14 +141,14 @@ export default function DashboardPage() {
         {isLoading ? <DashboardProjectsSkeleton /> : null}
 
         {!isLoading && projects.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center">
+          <div className="glass-card rounded-[28px] border-dashed px-6 py-12 text-center">
             <h3 className="mt-4 text-xl font-semibold text-foreground">No projects yet</h3>
             <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
               Create your first project to start tracking work from the dashboard.
             </p>
             <Link
               href="/projects"
-              className="mt-6 inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"
+              className="mt-6 inline-flex items-center rounded-2xl bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"
             >
               <Plus className="mr-2" size={16} />
               Create a project
@@ -162,7 +162,7 @@ export default function DashboardPage() {
               <Link
                 key={project.id}
                 href={`/projects/${project.id}`}
-                className="group rounded-2xl border border-border bg-card p-6 transition-all hover:-translate-y-0.5 hover:shadow-lg"
+                className="glass-card group rounded-[28px] p-6 transition-all hover:-translate-y-0.5 hover:bg-white/76 hover:shadow-[0_16px_36px_rgba(163,177,220,0.24)]"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-3">
@@ -184,10 +184,10 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="mt-6 flex flex-wrap gap-3 text-sm text-muted-foreground">
-                  <span className="rounded-full bg-muted px-3 py-1">Created {formatProjectDate(project.createdAt)}</span>
-                  {project.key ? <span className="rounded-full bg-muted px-3 py-1">{project.key}</span> : null}
+                  <span className="rounded-full bg-white/72 px-3 py-1 backdrop-blur-md">Created {formatProjectDate(project.createdAt)}</span>
+                  {project.key ? <span className="rounded-full bg-white/72 px-3 py-1 backdrop-blur-md">{project.key}</span> : null}
                   {project.dueDate ? (
-                    <span className="rounded-full bg-muted px-3 py-1">Due {formatProjectDate(project.dueDate)}</span>
+                    <span className="rounded-full bg-white/72 px-3 py-1 backdrop-blur-md">Due {formatProjectDate(project.dueDate)}</span>
                   ) : null}
                 </div>
               </Link>

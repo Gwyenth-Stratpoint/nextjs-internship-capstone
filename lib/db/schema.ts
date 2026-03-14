@@ -66,6 +66,12 @@ export const taskStatusEnum = pgEnum("task_status", [
   "done",
 ]);
 
+export const listCategoryEnum = pgEnum("list_category", [
+  "todo",
+  "in_progress",
+  "done",
+]);
+
 export const activityActionEnum = pgEnum("activity_action", [
   "created",
   "updated",
@@ -260,6 +266,7 @@ export const lists = pgTable(
 
     name: text("name").notNull(),
     position: integer("position").notNull().default(0), // for ordering columns
+    category: listCategoryEnum("category").notNull().default("todo"),
 
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()

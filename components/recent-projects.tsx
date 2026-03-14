@@ -28,7 +28,7 @@ export function RecentProjects({
   isLoading?: boolean
 }) {
   return (
-    <div className="bg-background rounded-lg border border-border p-6">
+    <div className="glass-panel rounded-[28px] p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-foreground">Recent Projects</h3>
         <Link href="/projects" className="text-primary hover:text-primary text-sm font-medium">
@@ -39,7 +39,7 @@ export function RecentProjects({
       {isLoading ? (
         <div className="space-y-4">
           {Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className="border border-border rounded-lg p-4">
+            <div key={index} className="glass-card rounded-2xl p-4">
               <div className="h-5 w-1/3 animate-pulse rounded bg-muted" />
               <div className="mt-2 h-4 w-2/3 animate-pulse rounded bg-muted" />
               <div className="mt-3 h-4 w-1/4 animate-pulse rounded bg-muted" />
@@ -49,7 +49,7 @@ export function RecentProjects({
       ) : null}
 
       {!isLoading && projects.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+        <div className="glass-card rounded-2xl border-dashed p-6 text-center text-sm text-muted-foreground">
           No projects yet.
         </div>
       ) : null}
@@ -57,7 +57,11 @@ export function RecentProjects({
       {!isLoading ? (
         <div className="space-y-4">
           {projects.map((project) => (
-            <Link key={project.id} href={`/projects/${project.id}`} className="block border border-border rounded-lg p-4 hover:bg-muted/40 transition-colors">
+            <Link
+              key={project.id}
+              href={`/projects/${project.id}`}
+              className="glass-card block rounded-2xl p-4 transition-colors hover:bg-white/72"
+            >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <h4 className="font-medium text-foreground">{project.name}</h4>
@@ -82,7 +86,7 @@ export function RecentProjects({
                   </div>
                 </div>
 
-                <span className="p-1 hover:bg-muted rounded">
+                <span className="rounded-xl p-1 hover:bg-white/72">
                   <MoreHorizontal size={16} />
                 </span>
               </div>
@@ -93,4 +97,3 @@ export function RecentProjects({
     </div>
   )
 }
-

@@ -63,6 +63,12 @@ type UpdateTaskInput = Partial<{
   archived: boolean;
 }>;
 
+type ReorderTasksInput = {
+  projectId?: string;
+  listId: string | null;
+  orderedTaskIds: string[];
+};
+
 function normalizeTask(input: any): TaskFromApi {
   return {
     id: input.id,
@@ -181,9 +187,7 @@ export function useTasks(projectId: string) {
           body: JSON.stringify(payload),
         });
         const created = normalizeTask(await parseApiResponse<TaskFromApi>(response));
-        startTransition(() => {
-          setTasks((current) => current.map((task) => (task.id === optimisticTask.id ? created : task)));
-        });
+        await fetchTasks();
         return created;
       } catch (err) {
         startTransition(() => {
@@ -192,7 +196,7 @@ export function useTasks(projectId: string) {
         throw err;
       }
     },
-    [projectId, startTransition, tasks],
+    [fetchTasks, projectId, startTransition, tasks],
   );
 
   const updateTask = useCallback(
@@ -221,9 +225,13 @@ export function useTasks(projectId: string) {
           body: JSON.stringify(input),
         });
         const updated = normalizeTask(await parseApiResponse<TaskFromApi>(response));
-        startTransition(() => {
-          setTasks((current) => current.map((task) => (task.id === taskId ? updated : task)));
-        });
+        if (input.position !== undefined || input.listId !== undefined) {
+          await fetchTasks();
+        } else {
+          startTransition(() => {
+            setTasks((current) => current.map((task) => (task.id === taskId ? updated : task)));
+          });
+        }
         return updated;
       } catch (err) {
         startTransition(() => {
@@ -232,7 +240,7 @@ export function useTasks(projectId: string) {
         throw err;
       }
     },
-    [startTransition, tasks],
+    [fetchTasks, startTransition, tasks],
   );
 
   const deleteTask = useCallback(
@@ -246,6 +254,7 @@ export function useTasks(projectId: string) {
       try {
         const response = await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
         await parseApiResponse<null>(response);
+        await fetchTasks();
       } catch (err) {
         startTransition(() => {
           setTasks(previousTasks);
@@ -253,7 +262,57 @@ export function useTasks(projectId: string) {
         throw err;
       }
     },
-    [startTransition, tasks],
+    [fetchTasks, startTransition, tasks],
+  );
+
+  const reorderTasks = useCallback(
+    async (input: ReorderTasksInput) => {
+      const resolvedProjectId = input.projectId ?? projectId;
+
+      if (!resolvedProjectId) {
+        throw new Error("Project id is required");
+      }
+
+      const previousTasks = tasks;
+      const reorderedIds = new Set(input.orderedTaskIds);
+      const reorderedTasks = input.orderedTaskIds
+        .map((id) => previousTasks.find((task) => task.id === id))
+        .filter((task): task is TaskFromApi => Boolean(task))
+        .map((task, index) => ({
+          ...task,
+          listId: input.listId,
+          position: index,
+          updatedAt: new Date().toISOString(),
+        }));
+      const untouchedTasks = previousTasks.filter((task) => !reorderedIds.has(task.id));
+
+      startTransition(() => {
+        setTasks([...untouchedTasks, ...reorderedTasks]);
+      });
+
+      try {
+        const response = await fetch("/api/tasks/reorder", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            projectId: resolvedProjectId,
+            listId: input.listId,
+            orderedTaskIds: input.orderedTaskIds,
+          }),
+        });
+        const data = await parseApiResponse<TaskFromApi[]>(response);
+        startTransition(() => {
+          setTasks(data.map(normalizeTask));
+        });
+        return data.map(normalizeTask);
+      } catch (err) {
+        startTransition(() => {
+          setTasks(previousTasks);
+        });
+        throw err;
+      }
+    },
+    [projectId, startTransition, tasks],
   );
 
   const moveTask = useCallback(
@@ -276,8 +335,9 @@ export function useTasks(projectId: string) {
       createTask,
       updateTask,
       deleteTask,
+      reorderTasks,
       moveTask,
     }),
-    [tasks, isLoading, error, isPending, fetchTasks, createTask, updateTask, deleteTask, moveTask],
+    [tasks, isLoading, error, isPending, fetchTasks, createTask, updateTask, deleteTask, reorderTasks, moveTask],
   );
 }
