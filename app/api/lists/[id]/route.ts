@@ -49,6 +49,17 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
 
+    if (
+      error instanceof Error &&
+      (error.message === "A start list already exists for this project" ||
+        error.message === "An end list already exists for this project")
+    ) {
+      return Response.json(
+        { success: false, error: { code: "BAD_REQUEST", message: error.message } },
+        { status: 400 },
+      );
+    }
+
     console.error("PATCH /api/lists/[id] failed:", error);
     return Response.json(
       {
@@ -92,6 +103,17 @@ export async function DELETE(_request: Request, context: RouteContext) {
       return Response.json(
         { success: false, error: { code: "NOT_FOUND", message: "List not found" } },
         { status: 404 },
+      );
+    }
+
+    if (
+      error instanceof Error &&
+      (error.message === "The project must keep one start list" ||
+        error.message === "The project must keep one end list")
+    ) {
+      return Response.json(
+        { success: false, error: { code: "BAD_REQUEST", message: error.message } },
+        { status: 400 },
       );
     }
 

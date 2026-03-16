@@ -59,7 +59,7 @@ const PROJECT_TEMPLATE_LISTS: Record<ProjectTemplate, Array<{
     {
       name: "To Do",
       position: 1,
-      category: "todo",
+      category: "in_progress",
     },
     {
       name: "In Progress",
@@ -87,11 +87,37 @@ async function getProjectListRows(projectId: string) {
   return db
     .select({
       id: lists.id,
+      name: lists.name,
+      category: lists.category,
+      archived: lists.archived,
       createdAt: lists.createdAt,
     })
     .from(lists)
     .where(eq(lists.projectId, projectId))
     .orderBy(asc(lists.position), asc(lists.createdAt));
+}
+
+async function assertUniqueTerminalCategory(
+  projectId: string,
+  category: "todo" | "in_progress" | "done",
+  options?: { excludeListId?: string },
+) {
+  if (category === "in_progress") {
+    return;
+  }
+
+  const existingLists = await getProjectListRows(projectId);
+  const duplicate = existingLists.find(
+    (list) => !list.archived && list.category === category && list.id !== options?.excludeListId,
+  );
+
+  if (duplicate) {
+    throw new Error(
+      category === "todo"
+        ? "A start list already exists for this project"
+        : "An end list already exists for this project",
+    );
+  }
 }
 
 export async function ensureProjectDefaultLists(projectId: string, template: ProjectTemplate = "simple") {
@@ -180,6 +206,7 @@ export async function createProjectList(
   input: CreateListInput,
 ) {
   await assertProjectRole(input.projectId, userId, ["owner", "admin"]);
+  await assertUniqueTerminalCategory(input.projectId, input.category ?? "in_progress");
   const existingLists = await getProjectListRows(input.projectId);
   const targetPosition = clampPosition(
     input.position ?? existingLists.length,
@@ -192,7 +219,7 @@ export async function createProjectList(
       projectId: input.projectId,
       name: input.name,
       position: targetPosition,
-      category: input.category ?? "todo",
+      category: input.category ?? "in_progress",
     })
     .returning();
 
@@ -220,6 +247,10 @@ export async function updateProjectList(
 ) {
   const existingList = await getAccessibleList(listId, userId);
   await assertProjectRole(existingList.projectId, userId, ["owner", "admin"]);
+  const nextCategory = input.category ?? existingList.category;
+  await assertUniqueTerminalCategory(existingList.projectId, nextCategory, {
+    excludeListId: listId,
+  });
 
   if (input.position !== undefined) {
     const siblingIds = (await getProjectListRows(existingList.projectId))
@@ -288,6 +319,14 @@ export async function updateProjectList(
 export async function deleteProjectList(listId: string, userId: string) {
   const existingList = await getAccessibleList(listId, userId);
   await assertProjectRole(existingList.projectId, userId, ["owner", "admin"]);
+
+  if (existingList.category === "todo" || existingList.category === "done") {
+    throw new Error(
+      existingList.category === "todo"
+        ? "The project must keep one start list"
+        : "The project must keep one end list",
+    );
+  }
 
   const [deletedList] = await db
     .delete(lists)

@@ -1,8 +1,9 @@
 "use client"
 
 import { MoreHorizontal, Plus } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
+import { CreateListModal } from "@/components/modals/create-list-modal"
 import { CreateTaskModal } from "@/components/modals/create-task-modal"
 import { TaskCard } from "@/components/task-card"
 import { useLists } from "@/hooks/use-lists"
@@ -42,42 +43,93 @@ function ListActions({
   onDelete,
   isDisabled = false,
 }: ListActionsProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement | null>(null)
   const canRename = typeof onRename === "function"
   const canEditCategory = typeof onEditCategory === "function"
   const canDelete = typeof onDelete === "function"
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    function handlePointerDown(event: MouseEvent) {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown)
+    document.addEventListener("keydown", handleEscape)
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown)
+      document.removeEventListener("keydown", handleEscape)
+    }
+  }, [isOpen])
 
   if (!canRename && !canEditCategory && !canDelete) {
     return null
   }
 
+  function handleAction(action?: () => void) {
+    if (!action || isDisabled) return
+    setIsOpen(false)
+    action()
+  }
+
   return (
-    <div className="flex items-center gap-2">
-      {canRename ? (
-        <button
-          onClick={onRename}
-          disabled={isDisabled}
-          className="rounded-md border border-border px-2 py-1 text-xs text-foreground transition-colors hover:bg-muted disabled:opacity-60"
-        >
-          Rename
-        </button>
-      ) : null}
-      {canEditCategory ? (
-        <button
-          onClick={onEditCategory}
-          disabled={isDisabled}
-          className="rounded-md border border-border px-2 py-1 text-xs text-foreground transition-colors hover:bg-muted disabled:opacity-60"
-        >
-          Category
-        </button>
-      ) : null}
-      {canDelete ? (
-        <button
-          onClick={onDelete}
-          disabled={isDisabled}
-          className="rounded-md border border-border px-2 py-1 text-xs text-foreground transition-colors hover:bg-muted disabled:opacity-60"
-        >
-          <MoreHorizontal size={14} />
-        </button>
+    <div ref={menuRef} className="relative flex items-center">
+      <button
+        type="button"
+        onClick={() => setIsOpen((current) => !current)}
+        disabled={isDisabled}
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+        aria-label="List actions"
+        className="rounded-md border border-border px-2 py-1 text-xs text-foreground transition-colors hover:bg-muted disabled:opacity-60"
+      >
+        <MoreHorizontal size={14} />
+      </button>
+
+      {isOpen ? (
+        <div className="absolute right-0 top-full z-10 mt-2 min-w-36 rounded-lg border border-border bg-background p-1 shadow-lg">
+          {canRename ? (
+            <button
+              type="button"
+              onClick={() => handleAction(onRename)}
+              disabled={isDisabled}
+              className="block w-full rounded-md px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted disabled:opacity-60"
+            >
+              Rename
+            </button>
+          ) : null}
+          {canEditCategory ? (
+            <button
+              type="button"
+              onClick={() => handleAction(onEditCategory)}
+              disabled={isDisabled}
+              className="block w-full rounded-md px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted disabled:opacity-60"
+            >
+              Category
+            </button>
+          ) : null}
+          {canDelete ? (
+            <button
+              type="button"
+              onClick={() => handleAction(onDelete)}
+              disabled={isDisabled}
+              className="block w-full rounded-md px-3 py-2 text-left text-sm text-red-600 transition-colors hover:bg-red-50 disabled:opacity-60"
+            >
+              Delete
+            </button>
+          ) : null}
+        </div>
       ) : null}
     </div>
   )
@@ -123,6 +175,7 @@ export function KanbanBoard({ projectId, role }: { projectId: string; role: Proj
 
   // Modal state for creating or editing a task.
   const [modalState, setModalState] = useState<ModalState>(null)
+  const [isCreateListOpen, setIsCreateListOpen] = useState(false)
 
   const activeLists = useMemo(
     () => lists.filter((list) => !list.archived).sort((a, b) => a.position - b.position),
@@ -151,25 +204,12 @@ export function KanbanBoard({ projectId, role }: { projectId: string; role: Proj
     return grouped
   }, [activeLists, tasks])
 
-  async function handleCreateList() {
-    const name = window.prompt("List name")
-    if (!name?.trim()) return
-
-    const categoryInput = window.prompt('List category: "todo", "in_progress", or "done"', "todo")
-    const normalizedCategory =
-      categoryInput === "todo" || categoryInput === "in_progress" || categoryInput === "done"
-        ? categoryInput
-        : "todo"
-
-    try {
-      await createList({
-        name: name.trim(),
-        position: activeLists.length,
-        category: normalizedCategory,
-      })
-    } catch (err) {
-      window.alert(err instanceof Error ? err.message : "Failed to create list")
-    }
+  async function handleCreateList(input: { name: string }) {
+    await createList({
+      name: input.name,
+      position: activeLists.length,
+      category: "in_progress",
+    })
   }
 
   async function handleRenameList(listId: string, currentName: string) {
@@ -198,7 +238,10 @@ export function KanbanBoard({ projectId, role }: { projectId: string; role: Proj
     listId: string,
     currentCategory: "todo" | "in_progress" | "done",
   ) {
-    const categoryInput = window.prompt('Set category: "todo", "in_progress", or "done"', currentCategory)
+    const categoryInput = window.prompt(
+      'Set category: "todo", "in_progress", or "done". Projects allow only one "todo" and one "done" list.',
+      currentCategory,
+    )
     if (!categoryInput?.trim()) return
 
     const normalizedCategory =
@@ -271,14 +314,12 @@ export function KanbanBoard({ projectId, role }: { projectId: string; role: Proj
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-foreground">Project board</h2>
           <p className="text-sm text-muted-foreground">
-            Manage columns and task cards inside this project. Drag and drop can be added in Task 5.2.
           </p>
         </div>
         {canManageLists ? (
           <button
-            onClick={() => void handleCreateList()}
+            onClick={() => setIsCreateListOpen(true)}
             disabled={isListsMutating}
             className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:opacity-60"
           >
@@ -316,7 +357,7 @@ export function KanbanBoard({ projectId, role }: { projectId: string; role: Proj
           </p>
           {canManageLists ? (
             <button
-              onClick={() => void handleCreateList()}
+              onClick={() => setIsCreateListOpen(true)}
               disabled={isListsMutating}
               className="mt-6 inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:opacity-60"
             >
@@ -435,6 +476,13 @@ export function KanbanBoard({ projectId, role }: { projectId: string; role: Proj
         isSubmitting={isTasksMutating}
         onClose={() => setModalState(null)}
         onSubmit={handleTaskSubmit}
+      />
+
+      <CreateListModal
+        isOpen={isCreateListOpen}
+        isSubmitting={isListsMutating}
+        onClose={() => setIsCreateListOpen(false)}
+        onSubmit={handleCreateList}
       />
     </div>
   )

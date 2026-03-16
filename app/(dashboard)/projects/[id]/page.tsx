@@ -79,9 +79,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Link href="/projects" className="p-2 hover:bg-muted rounded-lg transition-colors">
-            <ArrowLeft size={20} />
-          </Link>
+          
           <div>
             <h1 className="text-3xl font-bold text-foreground">{project.name}</h1>
             <p className="text-muted-foreground mt-1">{project.description ?? "No description"}</p>

@@ -79,6 +79,17 @@ export async function POST(request: Request) {
       );
     }
 
+    if (
+      error instanceof Error &&
+      (error.message === "A start list already exists for this project" ||
+        error.message === "An end list already exists for this project")
+    ) {
+      return Response.json(
+        { success: false, error: { code: "BAD_REQUEST", message: error.message } },
+        { status: 400 },
+      );
+    }
+
     console.error("POST /api/lists failed:", error);
     return Response.json(
       {

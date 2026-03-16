@@ -93,7 +93,6 @@ export async function listAccessibleProjects(userId: string) {
 
 export async function getAccessibleProjectById(projectId: string, userId: string) {
   const membership = await assertProjectRole(projectId, userId, ["owner", "admin", "member", "viewer"]);
-
   const [project] = await db
     .select({
       id: projects.id,

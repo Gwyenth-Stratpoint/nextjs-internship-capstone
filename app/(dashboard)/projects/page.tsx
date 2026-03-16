@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Filter, Plus, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { CreateProjectModal } from "@/components/modals/create-project-modal";
 import { useProjects } from "@/hooks/use-projects";
 
 export default function ProjectsPage() {
@@ -11,6 +12,7 @@ export default function ProjectsPage() {
   const { projects, isLoading, error, isMutating, createProject, updateProject, deleteProject } = useProjects();
   // Search state for client-side filtering of visible projects.
   const [search, setSearch] = useState("");
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const filteredProjects = useMemo(() => {
     const value = search.trim().toLowerCase();
@@ -25,17 +27,28 @@ export default function ProjectsPage() {
     });
   }, [projects, search]);
 
-  async function handleCreate() {
-    const name = window.prompt("Project name");
-    if (!name?.trim()) return;
+  function getCreateProjectErrorMessage(err: unknown) {
+    if (!(err instanceof Error)) {
+      return "Failed to create project";
+    }
 
-    const templateInput = window.prompt('Project template: "simple" or "software"', "simple");
-    const template = templateInput === "software" ? "software" : "simple";
+    if (err.message.includes('insert into "projects"') || err.message.includes('"slug"')) {
+      return "Project creation failed because the database schema is out of sync. Remove the projects.slug column or restore slug support.";
+    }
 
+    return err.message;
+  }
+
+  async function handleCreate(input: {
+    name: string;
+    description?: string | null;
+    dueDate?: string | null;
+    template?: "simple" | "software";
+  }) {
     try {
-      await createProject({ name: name.trim(), template });
+      await createProject(input);
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "Failed to create project");
+      throw new Error(getCreateProjectErrorMessage(err));
     }
   }
 
@@ -77,7 +90,7 @@ export default function ProjectsPage() {
           <p className="text-muted-foreground mt-2">Manage and organize your team projects</p>
         </div>
         <button
-          onClick={() => void handleCreate()}
+          onClick={() => setIsCreateModalOpen(true)}
           disabled={isMutating}
           className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-60"
         >
@@ -165,6 +178,13 @@ export default function ProjectsPage() {
           })()
         ))}
       </div>
+
+      <CreateProjectModal
+        isOpen={isCreateModalOpen}
+        isSubmitting={isMutating}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleCreate}
+      />
     </div>
   );
 }
