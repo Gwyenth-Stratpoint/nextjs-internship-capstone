@@ -1,6 +1,6 @@
 "use client"
 
-import { Pencil, Trash2 } from "lucide-react"
+import { CardBadge, CardHeader, CardMetaRow, CardSurface } from "@/components/cards/card-primitives"
 
 type TaskCardProps = {
   task: {
@@ -13,7 +13,6 @@ type TaskCardProps = {
     position: number
   }
   onEdit?: (id: string) => void
-  onDelete?: (id: string) => void
 }
 
 function getTaskStatusTone(status: TaskCardProps["task"]["status"]) {
@@ -52,56 +51,49 @@ function formatDate(value?: string | null) {
   }).format(new Date(value))
 }
 
-export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
+export function TaskCard({ task, onEdit }: TaskCardProps) {
   const canEdit = typeof onEdit === "function"
-  const canDelete = typeof onDelete === "function"
 
   return (
-    <article className="rounded-lg border border-border bg-background p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h4 className="font-medium text-foreground">{task.title}</h4>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {task.description ?? "No description"}
-          </p>
-        </div>
-        <span className={`rounded-full px-2 py-1 text-xs font-medium ${getTaskStatusTone(task.status)}`}>
-          {task.status.replace("_", " ")}
-        </span>
-      </div>
+    <CardSurface
+      role={canEdit ? "button" : undefined}
+      tabIndex={canEdit ? 0 : undefined}
+      onClick={canEdit ? () => onEdit?.(task.id) : undefined}
+      onKeyDown={
+        canEdit
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault()
+                onEdit?.(task.id)
+              }
+            }
+          : undefined
+      }
+      isInteractive={canEdit}
+    >
+      <CardHeader
+        title={task.title}
+        description={task.description ?? "No description"}
+        badge={
+          <CardBadge className={getTaskStatusTone(task.status)}>
+            {task.status.replace("_", " ")}
+          </CardBadge>
+        }
+      />
 
-      <div className="mt-3 flex items-center justify-between text-xs">
-        <span className={getPriorityTone(task.priority)}>Priority: {task.priority}</span>
-        <span className="text-muted-foreground">Position {task.position}</span>
-      </div>
+      <CardMetaRow
+        left={<span className={getPriorityTone(task.priority)}>Priority: {task.priority}</span>}
+        right={<span className="text-muted-foreground">Position {task.position}</span>}
+      />
 
-      <div className="mt-3 flex items-center justify-between text-xs">
-        <span className="text-muted-foreground">
-          {task.dueDate ? `Due ${formatDate(task.dueDate)}` : "No due date"}
-        </span>
-        {canEdit || canDelete ? (
-          <div className="flex items-center gap-2">
-            {canEdit ? (
-              <button
-                onClick={() => onEdit?.(task.id)}
-                className="inline-flex items-center rounded-md border border-border px-2 py-1 text-foreground transition-colors hover:bg-muted"
-              >
-                <Pencil size={12} className="mr-1" />
-                Edit
-              </button>
-            ) : null}
-            {canDelete ? (
-              <button
-                onClick={() => onDelete?.(task.id)}
-                className="inline-flex items-center rounded-md border border-red-200 px-2 py-1 text-red-700 transition-colors hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/20"
-              >
-                <Trash2 size={12} className="mr-1" />
-                Delete
-              </button>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
-    </article>
+      <CardMetaRow
+        left={
+          <span className="text-muted-foreground">
+            {task.dueDate ? `Due ${formatDate(task.dueDate)}` : "No due date"}
+          </span>
+        }
+        right={canEdit ? <span className="text-muted-foreground">Open task</span> : null}
+      />
+    </CardSurface>
   )
 }

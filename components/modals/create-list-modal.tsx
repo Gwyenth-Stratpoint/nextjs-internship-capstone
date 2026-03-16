@@ -1,7 +1,16 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { X } from "lucide-react"
+import { Columns3, Sparkles } from "lucide-react"
+
+import {
+  CenteredModalSurface,
+  ModalBackdrop,
+  ModalField,
+  ModalFooter,
+  ModalHeader,
+  ModalInputShell,
+} from "@/components/modals/modal-primitives"
 
 type ListDraft = {
   name: string
@@ -41,6 +50,10 @@ export function CreateListModal({
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
+    if (isSubmitting) {
+      return
+    }
+
     if (!form.name.trim()) {
       setError("List name is required")
       return
@@ -58,55 +71,47 @@ export function CreateListModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h3 className="text-lg font-semibold text-foreground">Create list</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Add a new column to organize tasks on this board.
-            </p>
-          </div>
-          <button type="button" onClick={onClose} className="rounded-md p-1 text-muted-foreground hover:bg-muted">
-            <X size={18} />
-          </button>
-        </div>
+    <ModalBackdrop onClose={onClose}>
+      <CenteredModalSurface>
+        <ModalHeader
+          title="Create a new list"
+          description="Add a middle-stage column to keep the board organized."
+          eyebrow={
+            <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+              <Sparkles size={14} />
+              Board workflow
+            </div>
+          }
+          onClose={onClose}
+        />
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <div>
-            <label className="mb-2 block text-sm font-medium text-foreground">List name</label>
-            <input
-              value={form.name}
-              onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground outline-none focus:ring-2 focus:ring-ring"
-              placeholder="Review"
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-3.5 px-4 py-3.5">
+          <ModalField label="List name*">
+            <ModalInputShell icon={<Columns3 size={18} />}>
+              <input
+                autoFocus
+                value={form.name}
+                onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+                className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3.5 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                placeholder="Review"
+              />
+            </ModalInputShell>
+          </ModalField>
 
-          <p className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-            New lists are added as middle workflow stages. The project keeps its premade start and end lists.
-          </p>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm text-slate-500">
+            New lists are inserted as workflow stages between your starting and finishing columns.
+          </div>
 
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:opacity-60"
-            >
-              {isSubmitting ? "Creating..." : "Create list"}
-            </button>
-          </div>
+          <ModalFooter
+            hint="You can rename or recategorize the list later."
+            submitLabel={isSubmitting ? "Creating..." : "Create list"}
+            isSubmitting={isSubmitting}
+            onClose={onClose}
+          />
         </form>
-      </div>
-    </div>
+      </CenteredModalSurface>
+    </ModalBackdrop>
   )
 }

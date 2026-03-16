@@ -25,7 +25,9 @@ type ModalState =
         description?: string | null
         status: TaskStatus
         priority: TaskPriority
+        assigneeId?: string | null
         dueDate?: string | null
+        labels?: string[]
       }
     }
   | null
@@ -277,7 +279,10 @@ export function KanbanBoard({ projectId, role }: { projectId: string; role: Proj
     description?: string | null
     status: TaskStatus
     priority: TaskPriority
+    assigneeId?: string | null
     dueDate?: string | null
+    labels: string[]
+    attachments: File[]
   }) {
     if (!modalState) return
 
@@ -288,10 +293,12 @@ export function KanbanBoard({ projectId, role }: { projectId: string; role: Proj
         description: input.description ?? null,
         status: input.status,
         priority: input.priority,
+        assigneeId: input.assigneeId ?? null,
         dueDate: input.dueDate ?? null,
         listId: modalState.listId,
         position: listTaskCount,
       })
+      setModalState(null)
       return
     }
 
@@ -300,8 +307,10 @@ export function KanbanBoard({ projectId, role }: { projectId: string; role: Proj
       description: input.description ?? null,
       status: input.status,
       priority: input.priority,
+      assigneeId: input.assigneeId ?? null,
       dueDate: input.dueDate ?? null,
     })
+    setModalState(null)
   }
 
   const boardError = listsError ?? tasksError
@@ -423,12 +432,13 @@ export function KanbanBoard({ projectId, role }: { projectId: string; role: Proj
                                   description: task.description,
                                   status: task.status,
                                   priority: task.priority,
+                                  assigneeId: task.assigneeId,
                                   dueDate: task.dueDate,
+                                  labels: [],
                                 },
                               })
                           : undefined
                       }
-                      onDelete={canManageTasks ? () => void handleDeleteTask(task.id, task.title) : undefined}
                     />
                   ))}
 
@@ -469,13 +479,25 @@ export function KanbanBoard({ projectId, role }: { projectId: string; role: Proj
                 description: modalState.task.description,
                 status: modalState.task.status,
                 priority: modalState.task.priority,
+                assigneeId: modalState.task.assigneeId,
                 dueDate: modalState.task.dueDate,
+                labels: modalState.task.labels ?? [],
               }
             : null
         }
+        assigneeOptions={[]}
+        comments={[]}
+        activityItems={[]}
+        canEdit={canManageTasks && modalState?.mode === "edit"}
+        canDelete={canManageTasks && modalState?.mode === "edit"}
         isSubmitting={isTasksMutating}
         onClose={() => setModalState(null)}
         onSubmit={handleTaskSubmit}
+        onDelete={
+          modalState?.mode === "edit" && canManageTasks
+            ? () => handleDeleteTask(modalState.task.id, modalState.task.title)
+            : undefined
+        }
       />
 
       <CreateListModal
