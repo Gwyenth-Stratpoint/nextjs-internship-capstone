@@ -1,12 +1,17 @@
 "use client"
 
-import type { KeyboardEvent, ReactNode } from "react"
+import type { DragEvent, KeyboardEvent, ReactNode } from "react"
 
 type CardSurfaceProps = {
   children: ReactNode
   isInteractive?: boolean
   onClick?: () => void
   onKeyDown?: (event: KeyboardEvent<HTMLElement>) => void
+  draggable?: boolean
+  onDragStart?: (event: DragEvent<HTMLElement>) => void
+  onDragEnd?: (event: DragEvent<HTMLElement>) => void
+  onDragOver?: (event: DragEvent<HTMLElement>) => void
+  onDrop?: (event: DragEvent<HTMLElement>) => void
   className?: string
   role?: string
   tabIndex?: number
@@ -21,6 +26,11 @@ export function CardSurface({
   isInteractive = false,
   onClick,
   onKeyDown,
+  draggable,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDrop,
   className,
   role,
   tabIndex,
@@ -31,6 +41,11 @@ export function CardSurface({
       tabIndex={tabIndex}
       onClick={onClick}
       onKeyDown={onKeyDown}
+      draggable={draggable}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
       className={joinClasses(
         "rounded-lg border border-border bg-background p-4 shadow-sm",
         isInteractive && "cursor-pointer transition-colors hover:bg-muted/40 hover:shadow-md",

@@ -178,6 +178,11 @@ export function KanbanBoard({ projectId, role }: { projectId: string; role: Proj
   // Modal state for creating or editing a task.
   const [modalState, setModalState] = useState<ModalState>(null)
   const [isCreateListOpen, setIsCreateListOpen] = useState(false)
+  const [dragState, setDragState] = useState<{
+    taskId: string
+    overListId: string | null
+    overTaskId: string | null
+  } | null>(null)
 
   const activeLists = useMemo(
     () => lists.filter((list) => !list.archived).sort((a, b) => a.position - b.position),
@@ -205,6 +210,72 @@ export function KanbanBoard({ projectId, role }: { projectId: string; role: Proj
 
     return grouped
   }, [activeLists, tasks])
+
+  function mapListCategoryToTaskStatus(category: "todo" | "in_progress" | "done"): TaskStatus {
+    switch (category) {
+      case "todo":
+        return "open"
+      case "done":
+        return "done"
+      default:
+        return "in_progress"
+    }
+  }
+
+  function handleTaskDragStart(taskId: string) {
+    setDragState({
+      taskId,
+      overListId: null,
+      overTaskId: null,
+    })
+  }
+
+  function handleTaskDragEnd() {
+    setDragState(null)
+  }
+
+  function handleTaskDragOver(listId: string, overTaskId: string | null = null) {
+    setDragState((current) => {
+      if (!current || (current.overListId === listId && current.overTaskId === overTaskId)) {
+        return current
+      }
+
+      return {
+        ...current,
+        overListId: listId,
+        overTaskId,
+      }
+    })
+  }
+
+  async function handleTaskDrop(listId: string, overTaskId: string | null = null) {
+    if (!dragState) return
+
+    const draggedTask = tasks.find((task) => task.id === dragState.taskId)
+    const destinationList = activeLists.find((list) => list.id === listId)
+
+    if (!draggedTask || !destinationList) {
+      setDragState(null)
+      return
+    }
+
+    const destinationTasks = (tasksByList.get(listId) ?? []).filter((task) => task.id !== draggedTask.id)
+    const nextPosition = overTaskId
+      ? Math.max(destinationTasks.findIndex((task) => task.id === overTaskId), 0)
+      : destinationTasks.length
+
+    try {
+      await updateTask(draggedTask.id, {
+        listId,
+        position: nextPosition,
+        status: mapListCategoryToTaskStatus(destinationList.category),
+      })
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "Failed to move task")
+    } finally {
+      setDragState(null)
+    }
+  }
 
   async function handleCreateList(input: { name: string }) {
     await createList({
@@ -345,9 +416,9 @@ export function KanbanBoard({ projectId, role }: { projectId: string; role: Proj
       ) : null}
 
       {isLoading ? (
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <div className="flex gap-4 overflow-x-auto pb-2">
           {Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className="rounded-xl border border-border bg-card p-5">
+            <div key={index} className="w-[320px] min-w-[320px] rounded-xl border border-border bg-card p-5">
               <div className="mb-4 h-6 w-1/2 animate-pulse rounded bg-muted" />
               <div className="space-y-3">
                 <div className="h-24 animate-pulse rounded-lg bg-muted" />
@@ -378,7 +449,7 @@ export function KanbanBoard({ projectId, role }: { projectId: string; role: Proj
       ) : null}
 
       {!isLoading ? (
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <div className="flex gap-4 overflow-x-auto pb-2">
           {activeLists.map((list) => {
             const listTasks = tasksByList.get(list.id) ?? []
             const onRenameList = canManageLists ? () => void handleRenameList(list.id, list.name) : undefined
@@ -387,7 +458,26 @@ export function KanbanBoard({ projectId, role }: { projectId: string; role: Proj
             const badge = categoryMeta[list.category]
 
             return (
-              <section key={list.id} className="rounded-xl border border-border bg-card p-5">
+              <section
+                key={list.id}
+                onDragOver={(event) => {
+                  event.preventDefault()
+                  if (canManageTasks && dragState) {
+                    handleTaskDragOver(list.id, null)
+                  }
+                }}
+                onDrop={(event) => {
+                  event.preventDefault()
+                  if (canManageTasks && dragState) {
+                    void handleTaskDrop(list.id, null)
+                  }
+                }}
+                className={`w-[320px] min-w-[320px] rounded-xl border bg-card p-5 ${
+                  dragState?.overListId === list.id && dragState.overTaskId === null
+                    ? "border-blue-300 ring-2 ring-blue-100"
+                    : "border-border"
+                }`}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
@@ -419,6 +509,21 @@ export function KanbanBoard({ projectId, role }: { projectId: string; role: Proj
                     <TaskCard
                       key={task.id}
                       task={task}
+                      draggable={canManageTasks}
+                      onDragStart={handleTaskDragStart}
+                      onDragEnd={handleTaskDragEnd}
+                      onDragOver={() => {
+                        if (canManageTasks && dragState?.taskId !== task.id) {
+                          handleTaskDragOver(list.id, task.id)
+                        }
+                      }}
+                      onDrop={() => {
+                        if (canManageTasks && dragState?.taskId !== task.id) {
+                          void handleTaskDrop(list.id, task.id)
+                        }
+                      }}
+                      isDragging={dragState?.taskId === task.id}
+                      isDropTarget={dragState?.overListId === list.id && dragState.overTaskId === task.id}
                       onEdit={
                         canManageTasks
                           ? () =>

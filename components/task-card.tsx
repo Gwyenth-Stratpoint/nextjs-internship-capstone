@@ -13,6 +13,13 @@ type TaskCardProps = {
     position: number
   }
   onEdit?: (id: string) => void
+  draggable?: boolean
+  onDragStart?: (id: string) => void
+  onDragEnd?: () => void
+  onDragOver?: () => void
+  onDrop?: () => void
+  isDragging?: boolean
+  isDropTarget?: boolean
 }
 
 function getTaskStatusTone(status: TaskCardProps["task"]["status"]) {
@@ -51,7 +58,17 @@ function formatDate(value?: string | null) {
   }).format(new Date(value))
 }
 
-export function TaskCard({ task, onEdit }: TaskCardProps) {
+export function TaskCard({
+  task,
+  onEdit,
+  draggable = false,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDrop,
+  isDragging = false,
+  isDropTarget = false,
+}: TaskCardProps) {
   const canEdit = typeof onEdit === "function"
 
   return (
@@ -59,6 +76,26 @@ export function TaskCard({ task, onEdit }: TaskCardProps) {
       role={canEdit ? "button" : undefined}
       tabIndex={canEdit ? 0 : undefined}
       onClick={canEdit ? () => onEdit?.(task.id) : undefined}
+      draggable={draggable}
+      onDragStart={draggable ? () => onDragStart?.(task.id) : undefined}
+      onDragEnd={draggable ? onDragEnd : undefined}
+      onDragOver={
+        draggable
+          ? (event) => {
+              event.preventDefault()
+              onDragOver?.()
+            }
+          : undefined
+      }
+      onDrop={
+        draggable
+          ? (event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              onDrop?.()
+            }
+          : undefined
+      }
       onKeyDown={
         canEdit
           ? (event) => {
@@ -70,6 +107,7 @@ export function TaskCard({ task, onEdit }: TaskCardProps) {
           : undefined
       }
       isInteractive={canEdit}
+      className={`${isDragging ? "opacity-50" : ""} ${isDropTarget ? "ring-2 ring-blue-300" : ""}`}
     >
       <CardHeader
         title={task.title}
