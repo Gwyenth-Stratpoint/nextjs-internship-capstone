@@ -1,16 +1,24 @@
-import { requireDbUserId } from "@/lib/auth";
+import { requireActiveClerkOrgId, requireDbUserId } from "@/lib/auth";
 import { listAccessibleProjects } from "@/lib/server/project-crud";
 
 export async function GET() {
   try {
     const userId = await requireDbUserId();
-    const data = await listAccessibleProjects(userId);
+    const orgId = await requireActiveClerkOrgId();
+    const data = await listAccessibleProjects(userId, orgId);
     return Response.json({ success: true, data }, { status: 200 });
   } catch (error) {
     if (error instanceof Error && error.message === "Unauthorized") {
       return Response.json(
         { success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } },
         { status: 401 },
+      );
+    }
+
+    if (error instanceof Error && error.message === "OrganizationRequired") {
+      return Response.json(
+        { success: false, error: { code: "ORGANIZATION_REQUIRED", message: "Select a workspace first" } },
+        { status: 400 },
       );
     }
 

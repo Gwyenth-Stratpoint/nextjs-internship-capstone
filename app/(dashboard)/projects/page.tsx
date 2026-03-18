@@ -143,21 +143,21 @@ export default function ProjectsPage() {
                     <button
                       onClick={() => void handleRename(project.id, project.name)}
                       disabled={isMutating}
-                      className="rounded border border-border px-3 py-1.5 text-xs hover:bg-muted disabled:opacity-60"
+                      className="rounded-lg px-3 py-2 text-left text-xs text-foreground transition hover:bg-muted disabled:opacity-60"
                     >
                       Rename
                     </button>
                     <button
                       onClick={() => void handleArchive(project.id, project.archived)}
                       disabled={isMutating}
-                      className="rounded border border-border px-3 py-1.5 text-xs hover:bg-muted disabled:opacity-60"
+                      className="rounded-lg px-3 py-2 text-left text-xs text-foreground transition hover:bg-muted disabled:opacity-60"
                     >
                       {project.archived ? "Unarchive" : "Archive"}
                     </button>
                     <button
                       onClick={() => void handleDelete(project.id, project.name)}
                       disabled={isMutating}
-                      className="rounded border border-red-300 px-3 py-1.5 text-xs text-red-700 hover:bg-red-50 disabled:opacity-60"
+                      className="rounded-lg px-3 py-2 text-left text-xs text-red-700 transition hover:bg-red-50 disabled:opacity-60"
                     >
                       Delete
                     </button>

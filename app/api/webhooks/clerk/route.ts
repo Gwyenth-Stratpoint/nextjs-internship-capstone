@@ -3,8 +3,9 @@ import { Webhook } from "svix";
 import type { WebhookEvent } from "@clerk/nextjs/server";
 
 import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
+import { users, workspaces } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { syncWorkspaceFromClerkOrganization } from "@/lib/server/workspace-crud";
 
 export async function POST(req: Request) {
   const secret = process.env.CLERK_WEBHOOK_SECRET;
@@ -63,6 +64,18 @@ export async function POST(req: Request) {
 
     if (type === "user.deleted") {
       
+    }
+
+    if (type === "organization.created" || type === "organization.updated") {
+      await syncWorkspaceFromClerkOrganization({
+        id: data.id,
+        name: data.name,
+        slug: "slug" in data ? data.slug ?? null : null,
+      });
+    }
+
+    if (type === "organization.deleted" && data.id) {
+      await db.delete(workspaces).where(eq(workspaces.clerkOrgId, data.id));
     }
 
     return new Response("OK", { status: 200 });

@@ -1,76 +1,10 @@
-import { UserPlus, Mail, MoreHorizontal } from "lucide-react"
+import { requireActiveClerkOrgId } from "@/lib/auth";
+import { getOrganizationTeamSnapshot } from "@/lib/server/team-crud";
+import TeamPageClient from "@/components/team-page-client";
 
-export default function TeamPage() {
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Team</h1>
-          <p className="text-muted-foreground mt-2">Manage team members and permissions</p>
-        </div>
-        <button className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
-          <UserPlus size={20} className="mr-2" />
-          Invite Member
-        </button>
-      </div>
+export default async function TeamPage() {
+  const orgId = await requireActiveClerkOrgId();
+  const snapshot = await getOrganizationTeamSnapshot(orgId);
 
-      {/* Implementation Tasks Banner */}
-      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-2">
-          📋 Team Management Implementation Tasks
-        </h3>
-        <ul className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
-          <li>• Task 6.1: Implement task assignment and user collaboration features</li>
-          <li>• Task 6.4: Implement project member management and permissions</li>
-        </ul>
-      </div>
-
-      {/* Team Members Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[
-          { name: "John Doe", role: "Project Manager", email: "john@example.com", avatar: "JD" },
-          { name: "Jane Smith", role: "Developer", email: "jane@example.com", avatar: "JS" },
-          { name: "Mike Johnson", role: "Designer", email: "mike@example.com", avatar: "MJ" },
-          { name: "Sarah Wilson", role: "Developer", email: "sarah@example.com", avatar: "SW" },
-          { name: "Tom Brown", role: "QA Engineer", email: "tom@example.com", avatar: "TB" },
-          { name: "Lisa Davis", role: "Designer", email: "lisa@example.com", avatar: "LD" },
-        ].map((member, index) => (
-          <div
-            key={index}
-            className="bg-card rounded-lg border border-border p-6"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-semibold">
-                  {member.avatar}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-foreground">{member.name}</h3>
-                  <p className="text-sm text-muted-foreground">{member.role}</p>
-                </div>
-              </div>
-              <button className="p-1 hover:bg-muted rounded">
-                <MoreHorizontal size={16} />
-              </button>
-            </div>
-
-            <div className="flex items-center text-sm text-muted-foreground mb-4">
-              <Mail size={16} className="mr-2" />
-              {member.email}
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-                Active
-              </span>
-              <div className="text-sm text-muted-foreground">
-                {Math.floor(Math.random() * 10) + 1} projects
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
+  return <TeamPageClient snapshot={snapshot} />;
 }
-

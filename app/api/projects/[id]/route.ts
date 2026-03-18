@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { requireDbUserId } from "@/lib/auth";
+import { requireActiveClerkOrgId, requireDbUserId } from "@/lib/auth";
 import { getAccessibleProjectById } from "@/lib/server/project-crud";
 
 const paramsSchema = z.object({
@@ -14,8 +14,9 @@ type RouteContext = {
 export async function GET(_request: Request, context: RouteContext) {
   try {
     const userId = await requireDbUserId();
+    const orgId = await requireActiveClerkOrgId();
     const { id } = paramsSchema.parse(await context.params);
-    const data = await getAccessibleProjectById(id, userId);
+    const data = await getAccessibleProjectById(id, userId, orgId);
     return Response.json({ success: true, data }, { status: 200 });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -29,6 +30,13 @@ export async function GET(_request: Request, context: RouteContext) {
       return Response.json(
         { success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } },
         { status: 401 },
+      );
+    }
+
+    if (error instanceof Error && error.message === "OrganizationRequired") {
+      return Response.json(
+        { success: false, error: { code: "ORGANIZATION_REQUIRED", message: "Select a workspace first" } },
+        { status: 400 },
       );
     }
 

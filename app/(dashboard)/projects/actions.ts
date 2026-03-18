@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 
-import { requireDbUserId } from "@/lib/auth";
+import { requireActiveClerkOrgId, requireDbUserId } from "@/lib/auth";
 import { createOwnedProject, deleteOwnedProject, updateOwnedProject } from "@/lib/server/project-crud";
 
 const createProjectInputSchema = z.object({
@@ -37,8 +37,9 @@ const projectIdSchema = z.string().uuid("Invalid project id");
 
 export async function createProjectAction(input: z.input<typeof createProjectInputSchema>) {
   const userId = await requireDbUserId();
+  const orgId = await requireActiveClerkOrgId();
   const payload = createProjectInputSchema.parse(input);
-  return createOwnedProject(userId, payload);
+  return createOwnedProject(userId, orgId, payload);
 }
 
 export async function updateProjectAction(
@@ -46,13 +47,15 @@ export async function updateProjectAction(
   input: z.input<typeof updateProjectInputSchema>,
 ) {
   const userId = await requireDbUserId();
+  const orgId = await requireActiveClerkOrgId();
   const id = projectIdSchema.parse(projectId);
   const payload = updateProjectInputSchema.parse(input);
-  return updateOwnedProject(id, userId, payload);
+  return updateOwnedProject(id, userId, orgId, payload);
 }
 
 export async function deleteProjectAction(projectId: string) {
   const userId = await requireDbUserId();
+  const orgId = await requireActiveClerkOrgId();
   const id = projectIdSchema.parse(projectId);
-  return deleteOwnedProject(id, userId);
+  return deleteOwnedProject(id, userId, orgId);
 }

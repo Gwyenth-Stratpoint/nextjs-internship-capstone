@@ -1,9 +1,11 @@
 import { and, desc, eq } from "drizzle-orm";
 
+import { getActiveClerkOrgRole } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { lists, projectMembers, projects, workspaceMembers, workspaces } from "@/lib/db/schema";
+import { projectMembers, projects, workspaces } from "@/lib/db/schema";
 import { ensureProjectDefaultLists, type ProjectTemplate } from "@/lib/server/list-crud";
 import { assertProjectRole } from "@/lib/server/project-permissions";
+import { requireWorkspaceForClerkOrg } from "@/lib/server/workspace-crud";
 
 type CreateProjectInput = {
   name: string;
@@ -21,51 +23,51 @@ type UpdateProjectInput = Partial<{
   archived: boolean;
 }>;
 
-function personalWorkspaceSlug(userId: string) {
-  return `personal-${userId.slice(0, 12)}`;
-}
-
-async function getOrCreateOwnedWorkspace(userId: string) {
-  const slug = personalWorkspaceSlug(userId);
-
-  const [existingWorkspace] = await db.select().from(workspaces).where(eq(workspaces.slug, slug)).limit(1);
-
-  const workspace =
-    existingWorkspace ??
-    (
-      await db
-        .insert(workspaces)
-        .values({
-          name: "My Workspace",
-          slug,
-          createdById: userId,
-        })
-        .returning()
-    )[0];
-
-  if (!workspace) {
-    throw new Error("Failed to create workspace");
+function mapOrganizationRoleToProjectRole(orgRole: string | null) {
+  if (orgRole === "org:owner") {
+    return "owner" as const;
   }
 
-  const [existingMembership] = await db
-    .select()
-    .from(workspaceMembers)
-    .where(and(eq(workspaceMembers.workspaceId, workspace.id), eq(workspaceMembers.userId, userId)))
-    .limit(1);
-
-  if (!existingMembership) {
-    await db.insert(workspaceMembers).values({
-      workspaceId: workspace.id,
-      userId,
-      role: "owner",
-      status: "active",
-    });
+  if (orgRole === "org:admin") {
+    return "admin" as const;
   }
 
-  return workspace.id;
+  return null;
 }
 
-export async function listAccessibleProjects(userId: string) {
+export async function listAccessibleProjects(userId: string, clerkOrgId: string) {
+  const organizationRole = mapOrganizationRoleToProjectRole(await getActiveClerkOrgRole());
+
+  if (organizationRole) {
+    const rows = await db
+      .select({
+        id: projects.id,
+        workspaceId: projects.workspaceId,
+        name: projects.name,
+        description: projects.description,
+        key: projects.key,
+        dueDate: projects.dueDate,
+        createdById: projects.createdById,
+        createdAt: projects.createdAt,
+        updatedAt: projects.updatedAt,
+        archived: projects.archived,
+        role: projectMembers.role,
+      })
+      .from(projects)
+      .innerJoin(workspaces, eq(workspaces.id, projects.workspaceId))
+      .leftJoin(
+        projectMembers,
+        and(eq(projectMembers.projectId, projects.id), eq(projectMembers.userId, userId)),
+      )
+      .where(eq(workspaces.clerkOrgId, clerkOrgId))
+      .orderBy(desc(projects.createdAt));
+
+    return rows.map((row) => ({
+      ...row,
+      role: row.role ?? organizationRole,
+    }));
+  }
+
   return db
     .select({
       id: projects.id,
@@ -88,10 +90,12 @@ export async function listAccessibleProjects(userId: string) {
         eq(projectMembers.userId, userId),
       ),
     )
+    .innerJoin(workspaces, eq(workspaces.id, projects.workspaceId))
+    .where(eq(workspaces.clerkOrgId, clerkOrgId))
     .orderBy(desc(projects.createdAt));
 }
 
-export async function getAccessibleProjectById(projectId: string, userId: string) {
+export async function getAccessibleProjectById(projectId: string, userId: string, clerkOrgId: string) {
   const membership = await assertProjectRole(projectId, userId, ["owner", "admin", "member", "viewer"]);
   const [project] = await db
     .select({
@@ -112,7 +116,8 @@ export async function getAccessibleProjectById(projectId: string, userId: string
       projectMembers,
       and(eq(projectMembers.projectId, projects.id), eq(projectMembers.userId, userId)),
     )
-    .where(eq(projects.id, projectId))
+    .innerJoin(workspaces, eq(workspaces.id, projects.workspaceId))
+    .where(and(eq(projects.id, projectId), eq(workspaces.clerkOrgId, clerkOrgId)))
     .limit(1);
 
   if (!project) {
@@ -125,13 +130,13 @@ export async function getAccessibleProjectById(projectId: string, userId: string
   };
 }
 
-export async function createOwnedProject(userId: string, input: CreateProjectInput) {
-  const workspaceId = await getOrCreateOwnedWorkspace(userId);
+export async function createOwnedProject(userId: string, clerkOrgId: string, input: CreateProjectInput) {
+  const workspace = await requireWorkspaceForClerkOrg(clerkOrgId, userId);
 
   const [project] = await db
     .insert(projects)
     .values({
-      workspaceId,
+      workspaceId: workspace.id,
       name: input.name,
       description: input.description ?? null,
       dueDate: input.dueDate ?? null,
@@ -160,8 +165,24 @@ export async function createOwnedProject(userId: string, input: CreateProjectInp
   return project;
 }
 
-export async function updateOwnedProject(projectId: string, userId: string, input: UpdateProjectInput) {
+export async function updateOwnedProject(
+  projectId: string,
+  userId: string,
+  clerkOrgId: string,
+  input: UpdateProjectInput,
+) {
   await assertProjectRole(projectId, userId, ["owner", "admin"]);
+
+  const [scopedProject] = await db
+    .select({ id: projects.id })
+    .from(projects)
+    .innerJoin(workspaces, eq(workspaces.id, projects.workspaceId))
+    .where(and(eq(projects.id, projectId), eq(workspaces.clerkOrgId, clerkOrgId)))
+    .limit(1);
+
+  if (!scopedProject) {
+    throw new Error("NotFound");
+  }
 
   const [project] = await db
     .update(projects)
@@ -179,8 +200,19 @@ export async function updateOwnedProject(projectId: string, userId: string, inpu
   return project;
 }
 
-export async function deleteOwnedProject(projectId: string, userId: string) {
+export async function deleteOwnedProject(projectId: string, userId: string, clerkOrgId: string) {
   await assertProjectRole(projectId, userId, ["owner", "admin"]);
+
+  const [scopedProject] = await db
+    .select({ id: projects.id })
+    .from(projects)
+    .innerJoin(workspaces, eq(workspaces.id, projects.workspaceId))
+    .where(and(eq(projects.id, projectId), eq(workspaces.clerkOrgId, clerkOrgId)))
+    .limit(1);
+
+  if (!scopedProject) {
+    throw new Error("NotFound");
+  }
 
   const [project] = await db.delete(projects).where(eq(projects.id, projectId)).returning();
 

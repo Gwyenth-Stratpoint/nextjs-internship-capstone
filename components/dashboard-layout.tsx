@@ -20,6 +20,7 @@ import {
   Search,
 } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
+import { DashboardOrgChip } from "@/components/dashboard-org-chip";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
@@ -122,6 +123,8 @@ export default function DashboardLayout({
 
               {/* Right-side actions */}
               <div className="flex items-center gap-x-4 lg:gap-x-6">
+                <DashboardOrgChip />
+
                 <button
                   className="glass-card p-2 rounded-xl hover:bg-white/80"
                   aria-label="Notifications"

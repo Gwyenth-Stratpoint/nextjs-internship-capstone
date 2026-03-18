@@ -1,7 +1,8 @@
 "use client"
 
+import Link from "next/link"
 import { useEffect, useState } from "react"
-import { CalendarDays, FolderOpen, Shield, Users } from "lucide-react"
+import { ArrowUpRight, CalendarDays, FolderOpen, Shield, Users } from "lucide-react"
 import { z } from "zod"
 
 import { projectSchema } from "@/lib/validations"
@@ -164,9 +165,20 @@ export function CreateProjectModal({
           </ModalField>
 
           <ModalField label="Team assignment">
-            <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-500">
-              <Users size={18} className="text-slate-400" />
-              Team member assignment will be added when project membership UI is ready.
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm text-slate-600">
+              <div className="flex items-start gap-3">
+                <Users size={18} className="mt-0.5 text-slate-400" />
+                <div className="space-y-2">
+                  <p>Invites happen from the workspace Team page, not inside project creation.</p>
+                  <Link
+                    href="/team"
+                    className="inline-flex items-center gap-1.5 font-medium text-blue-600 transition hover:text-blue-700"
+                  >
+                    Open Team and send invite
+                    <ArrowUpRight size={14} />
+                  </Link>
+                </div>
+              </div>
             </div>
           </ModalField>
 

@@ -24,7 +24,7 @@ type ProjectFromApi = {
 
 type ApiSuccess<T> = {
   success: true;
-  data: T;
+  data: T; 
 };
 
 type ApiError = {

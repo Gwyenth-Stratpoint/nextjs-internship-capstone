@@ -1,7 +1,8 @@
 "use client"
 
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
-import { CalendarDays } from "lucide-react"
+import { CalendarDays, MoreVertical } from "lucide-react"
 
 import { CardBadge, CardHeader, CardMetaRow, CardSurface } from "@/components/cards/card-primitives"
 
@@ -56,6 +57,33 @@ function getProjectStatusLabel(status: ProjectStatus) {
 }
 
 export function ProjectCard({ project, href, actions, footer }: ProjectCardProps) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (!isMenuOpen) return
+
+    function handlePointerDown(event: MouseEvent) {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setIsMenuOpen(false)
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsMenuOpen(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown)
+    document.addEventListener("keydown", handleEscape)
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown)
+      document.removeEventListener("keydown", handleEscape)
+    }
+  }, [isMenuOpen])
+
   const title = href ? (
     <Link href={href} className="block text-lg font-semibold hover:underline">
       {project.name}
@@ -69,7 +97,34 @@ export function ProjectCard({ project, href, actions, footer }: ProjectCardProps
       <CardHeader
         title={title}
         description={project.description ?? "No description"}
-        badge={<CardBadge className={getProjectStatusTone(project.status)}>{getProjectStatusLabel(project.status)}</CardBadge>}
+        badge={
+          <div className="flex items-start gap-2">
+            <CardBadge className={getProjectStatusTone(project.status)}>{getProjectStatusLabel(project.status)}</CardBadge>
+            {actions ? (
+              <div ref={menuRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsMenuOpen((current) => !current)}
+                  className="rounded-lg p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                  aria-label={`Open actions for ${project.name}`}
+                  aria-expanded={isMenuOpen}
+                >
+                  <MoreVertical size={16} />
+                </button>
+                {isMenuOpen ? (
+                  <div className="absolute right-0 top-9 z-20 min-w-[9rem] rounded-xl border border-border bg-background p-1.5 shadow-lg">
+                    <div
+                      className="flex flex-col gap-1"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {actions}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        }
       />
 
       <CardMetaRow
@@ -100,7 +155,6 @@ export function ProjectCard({ project, href, actions, footer }: ProjectCardProps
       ) : null}
 
       {footer ? <div className="mt-4">{footer}</div> : null}
-      {actions ? <div className="mt-4 flex flex-wrap gap-2">{actions}</div> : null}
     </CardSurface>
   )
 }

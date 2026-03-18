@@ -118,6 +118,7 @@ export const workspaces = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     name: text("name").notNull(),
     slug: text("slug").notNull(), // for URLs, unique per workspace
+    clerkOrgId: text("clerk_org_id"),
 
     // optional: who created it
     createdById: uuid("created_by_id").references(() => users.id, {
@@ -135,6 +136,7 @@ export const workspaces = pgTable(
   },
   (t) => ({
     slugUnique: uniqueIndex("workspaces_slug_unique").on(t.slug),
+    clerkOrgIdUnique: uniqueIndex("workspaces_clerk_org_id_unique").on(t.clerkOrgId),
     createdByIdx: index("workspaces_created_by_idx").on(t.createdById),
   }),
 );
