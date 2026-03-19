@@ -121,16 +121,19 @@ Each intern will work through all tasks below for their individual implementatio
 ## GitHub Projects Board Organization
 
 ### Issue Naming Convention
+
 Each issue will include the intern's name for clarity:
 
 **Format**: `[Intern Name] Task Number - Task Description`
 
 **Examples**:
+
 - `[Sarah Jones] 1.1 - Initialize Next.js project with TypeScript`
 - `[John Doe] 2.3 - Create sign-in and sign-up pages`
 - `[Maria Garcia] 5.2 - Implement drag-and-drop functionality`
 
 ### Labels for Organization
+
 - **Timeline**: `week-1`, `week-2`, `week-3`, etc.
 - **Priority**: `priority-high`, `priority-medium`, `priority-low`
 - **Category**: `frontend`, `backend`, `database`, `auth`, `testing`, `deployment`
@@ -138,6 +141,7 @@ Each issue will include the intern's name for clarity:
 - **Status**: `blocked`, `in-review`, `needs-help`
 
 ### Columns
+
 - **📋 Backlog** - All tasks waiting to be started
 - **🎯 This Week** - Tasks planned for current week
 - **🚧 In Progress** - Tasks currently being worked on
@@ -147,22 +151,27 @@ Each issue will include the intern's name for clarity:
 ## Collaboration While Building Individually
 
 ### Daily Standups (15 minutes)
+
 **Format**: Each person shares (2 minutes each):
+
 - What I completed yesterday
 - What I'm working on today
 - Any blockers or questions
 
 ### Code Review Sessions (Optional, 30 minutes weekly)
+
 - Share interesting code snippets
 - Ask for feedback on implementation approaches
 - Discuss different solutions to the same problems
 
 ### Knowledge Sharing (30 minutes weekly)
+
 - One intern presents a topic they learned deeply
 - Demo a particularly interesting feature implementation
 - Share resources and learning materials
 
 ### Problem-Solving Sessions (As needed)
+
 - Anyone can call for help when stuck
 - Group debugging sessions
 - Pair programming opportunities
@@ -170,28 +179,36 @@ Each issue will include the intern's name for clarity:
 ## Individual Milestones & Tracking
 
 ### Milestone 1: Working Development Environment (End of Week 2)
+
 **Success Criteria**:
+
 - [ ] Next.js project running locally
 - [ ] Authentication working with Clerk
 - [ ] Database connected and schema implemented
 - [ ] Basic dashboard accessible after login
 
 ### Milestone 2: Core CRUD Functionality (End of Week 5)
+
 **Success Criteria**:
+
 - [ ] Projects can be created, edited, deleted
 - [ ] Lists can be managed within projects
 - [ ] Tasks can be created, edited, deleted
 - [ ] All data persists correctly
 
 ### Milestone 3: Interactive Kanban Board (End of Week 7)
+
 **Success Criteria**:
+
 - [ ] Drag-and-drop working smoothly
 - [ ] Real-time updates without page refresh
 - [ ] State management working correctly
 - [ ] Mobile-responsive design
 
 ### Milestone 4: Production Ready (End of Week 10)
+
 **Success Criteria**:
+
 - [ ] Deployed and accessible online
 - [ ] Tests written and passing
 - [ ] Error monitoring in place
@@ -202,11 +219,13 @@ Each issue will include the intern's name for clarity:
 Each intern will present their individual implementation:
 
 ### Individual Presentation (15 minutes each)
+
 - **Live Demo** (8 minutes): Show all major features working
 - **Technical Deep Dive** (5 minutes): Explain one interesting technical decision
 - **Reflection** (2 minutes): What was most challenging and what they learned
 
 ### Group Discussion (30 minutes)
+
 - Compare different implementation approaches
 - Identify best practices that emerged
 - Discuss lessons learned and future improvements
@@ -214,6 +233,7 @@ Each intern will present their individual implementation:
 ## Benefits of Individual Development
 
 ### For Learning
+
 - ✅ Everyone experiences the full development lifecycle
 - ✅ Complete ownership and responsibility
 - ✅ Full portfolio project for job applications
@@ -221,6 +241,7 @@ Each intern will present their individual implementation:
 - ✅ Problem-solving skills across all domains
 
 ### For Collaboration
+
 - ✅ Learn from 7 different approaches to the same problems
 - ✅ Rich discussions comparing implementation strategies
 - ✅ Help each other without dependency bottlenecks

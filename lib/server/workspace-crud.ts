@@ -39,6 +39,17 @@ type ClerkOrganizationLike = {
   slug?: string | null;
 };
 
+function isClerkOrganizationLike(value: unknown): value is ClerkOrganizationLike {
+  return Boolean(
+    value &&
+    typeof value === "object" &&
+    "id" in value &&
+    "name" in value &&
+    typeof (value as { id: unknown }).id === "string" &&
+    typeof (value as { name: unknown }).name === "string",
+  );
+}
+
 export async function getWorkspaceByClerkOrgId(clerkOrgId: string) {
   const [workspace] = await db
     .select()
@@ -55,7 +66,9 @@ export async function createWorkspaceForClerkOrg(input: {
   slug?: string | null;
   createdById?: string | null;
 }) {
-  const preferredSlug = input.slug ? slugifyWorkspaceName(input.slug) : slugifyWorkspaceName(input.name);
+  const preferredSlug = input.slug
+    ? slugifyWorkspaceName(input.slug)
+    : slugifyWorkspaceName(input.name);
   const slug = await findUniqueWorkspaceSlug(preferredSlug);
 
   const [workspace] = await db
@@ -109,16 +122,16 @@ export async function requireWorkspaceForClerkOrg(clerkOrgId: string, createdByI
     return existingWorkspace;
   }
 
-  const client = (await clerkClient()) as any;
-  const organization = (await client.organizations.getOrganization({
+  const client = await clerkClient();
+  const organizationResult: unknown = await client.organizations.getOrganization({
     organizationId: clerkOrgId,
-  })) as ClerkOrganizationLike | null;
+  });
 
-  if (!organization) {
+  if (!isClerkOrganizationLike(organizationResult)) {
     throw new Error("OrganizationNotFound");
   }
 
-  return syncWorkspaceFromClerkOrganization(organization, createdById);
+  return syncWorkspaceFromClerkOrganization(organizationResult, createdById);
 }
 
 export async function getWorkspaceProjectCounts(workspaceId: string) {

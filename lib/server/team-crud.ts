@@ -5,6 +5,32 @@ import { db } from "@/lib/db";
 import { projectMembers, projects, users } from "@/lib/db/schema";
 import { requireWorkspaceForClerkOrg } from "@/lib/server/workspace-crud";
 
+type ClerkOrganizationSummary = {
+  name?: string | null;
+};
+
+type ClerkOrganizationMember = {
+  id: string;
+  role?: string | null;
+  createdAt?: number | string | null;
+  publicUserData?: {
+    userId?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+    identifier?: string | null;
+    emailAddress?: string | null;
+    imageUrl?: string | null;
+  };
+};
+
+type ClerkOrganizationInvitation = {
+  id: string;
+  emailAddress?: string | null;
+  role?: string | null;
+  status?: string | null;
+  createdAt?: number | string | null;
+};
+
 function toArray<T>(value: unknown): T[] {
   if (Array.isArray(value)) {
     return value as T[];
@@ -19,7 +45,7 @@ function toArray<T>(value: unknown): T[] {
 
 export async function getOrganizationTeamSnapshot(clerkOrgId: string) {
   const workspace = await requireWorkspaceForClerkOrg(clerkOrgId);
-  const client = (await clerkClient()) as any;
+  const client = await clerkClient();
 
   const [organization, membershipResult, invitationResult, projectCountRows] = await Promise.all([
     client.organizations.getOrganization({ organizationId: clerkOrgId }),
@@ -43,9 +69,12 @@ export async function getOrganizationTeamSnapshot(clerkOrgId: string) {
     projectCountRows.map((row) => [row.clerkId, Number(row.projectCount ?? 0)]),
   );
 
-  const members = toArray<any>(membershipResult).map((membership) => {
+  const members = toArray<ClerkOrganizationMember>(membershipResult).map((membership) => {
     const publicUserData = membership.publicUserData ?? {};
-    const fullName = [publicUserData.firstName, publicUserData.lastName].filter(Boolean).join(" ").trim();
+    const fullName = [publicUserData.firstName, publicUserData.lastName]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
 
     return {
       id: membership.id,
@@ -54,12 +83,14 @@ export async function getOrganizationTeamSnapshot(clerkOrgId: string) {
       email: publicUserData.identifier ?? publicUserData.emailAddress ?? "",
       name: fullName || publicUserData.identifier || "Workspace member",
       avatarUrl: publicUserData.imageUrl ?? null,
-      projectCount: publicUserData.userId ? (projectCountByClerkId.get(publicUserData.userId) ?? 0) : 0,
+      projectCount: publicUserData.userId
+        ? (projectCountByClerkId.get(publicUserData.userId) ?? 0)
+        : 0,
       joinedAt: membership.createdAt ?? null,
     };
   });
 
-  const invitations = toArray<any>(invitationResult)
+  const invitations = toArray<ClerkOrganizationInvitation>(invitationResult)
     .map((invitation) => ({
       id: invitation.id,
       email: invitation.emailAddress ?? "",
@@ -74,7 +105,7 @@ export async function getOrganizationTeamSnapshot(clerkOrgId: string) {
       id: workspace.id,
       name: workspace.name,
       clerkOrgId,
-      organizationName: organization?.name ?? workspace.name,
+      organizationName: (organization as ClerkOrganizationSummary | null)?.name ?? workspace.name,
     },
     members,
     invitations,
@@ -87,7 +118,7 @@ export async function createOrganizationInvitation(input: {
   emailAddress: string;
   role: "org:admin" | "org:member";
 }) {
-  const client = (await clerkClient()) as any;
+  const client = await clerkClient();
 
   return client.organizations.createOrganizationInvitation({
     organizationId: input.clerkOrgId,

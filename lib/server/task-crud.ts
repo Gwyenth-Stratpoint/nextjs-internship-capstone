@@ -1,7 +1,7 @@
-import { and, asc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { lists, tasks } from "@/lib/db/schema";
+import { comments, lists, tasks, users } from "@/lib/db/schema";
 import { assertProjectRole, getProjectMembership } from "@/lib/server/project-permissions";
 
 type CreateTaskInput = {
@@ -46,6 +46,52 @@ function listScopeCondition(listId: string | null) {
   return listId === null ? isNull(tasks.listId) : eq(tasks.listId, listId);
 }
 
+const taskCommentCounts = db
+  .select({
+    taskId: comments.taskId,
+    commentCount: sql<number>`cast(count(*) as integer)`.as("comment_count"),
+  })
+  .from(comments)
+  .groupBy(comments.taskId)
+  .as("task_comment_counts");
+
+function buildTaskRecordsQuery() {
+  return db
+    .select({
+      id: tasks.id,
+      projectId: tasks.projectId,
+      listId: tasks.listId,
+      position: tasks.position,
+      title: tasks.title,
+      description: tasks.description,
+      status: tasks.status,
+      priority: tasks.priority,
+      assigneeId: tasks.assigneeId,
+      reporterId: tasks.reporterId,
+      dueDate: tasks.dueDate,
+      startDate: tasks.startDate,
+      archived: tasks.archived,
+      createdAt: tasks.createdAt,
+      updatedAt: tasks.updatedAt,
+      reporterName: users.name,
+      reporterAvatarUrl: users.avatarUrl,
+      commentCount: sql<number>`coalesce(${taskCommentCounts.commentCount}, 0)`,
+    })
+    .from(tasks)
+    .leftJoin(users, eq(tasks.reporterId, users.id))
+    .leftJoin(taskCommentCounts, eq(taskCommentCounts.taskId, tasks.id));
+}
+
+async function getTaskRecordById(taskId: string) {
+  const [task] = await buildTaskRecordsQuery().where(eq(tasks.id, taskId)).limit(1);
+
+  if (!task) {
+    throw new Error("NotFound");
+  }
+
+  return task;
+}
+
 async function assertListBelongsToProject(listId: string, projectId: string) {
   const [list] = await db
     .select({
@@ -74,10 +120,13 @@ async function getTaskOrderRows(projectId: string, listId: string | null) {
     .orderBy(asc(tasks.position), asc(tasks.createdAt));
 }
 
-async function persistTaskOrder(projectId: string, listId: string | null, orderedTaskIds?: string[]) {
+async function persistTaskOrder(
+  projectId: string,
+  listId: string | null,
+  orderedTaskIds?: string[],
+) {
   const resolvedIds =
-    orderedTaskIds ??
-    (await getTaskOrderRows(projectId, listId)).map((task) => task.id);
+    orderedTaskIds ?? (await getTaskOrderRows(projectId, listId)).map((task) => task.id);
 
   for (const [position, taskId] of resolvedIds.entries()) {
     await db
@@ -129,9 +178,7 @@ async function getAccessibleTask(taskId: string, userId: string) {
 export async function listProjectTasks(projectId: string, userId: string) {
   await assertProjectRole(projectId, userId, ["owner", "admin", "member", "viewer"]);
 
-  return db
-    .select()
-    .from(tasks)
+  return buildTaskRecordsQuery()
     .where(eq(tasks.projectId, projectId))
     .orderBy(asc(tasks.listId), asc(tasks.position), asc(tasks.createdAt));
 }
@@ -159,7 +206,7 @@ export async function createProjectTask(userId: string, input: CreateTaskInput) 
       status: input.status ?? "open",
       priority: input.priority ?? "none",
       assigneeId: input.assigneeId ?? null,
-      reporterId: input.reporterId ?? null,
+      reporterId: input.reporterId ?? userId,
       dueDate: input.dueDate ?? null,
       startDate: input.startDate ?? null,
       position: targetPosition,
@@ -174,7 +221,7 @@ export async function createProjectTask(userId: string, input: CreateTaskInput) 
   orderedTaskIds.splice(targetPosition, 0, task.id);
   await persistTaskOrder(input.projectId, input.listId ?? null, orderedTaskIds);
 
-  return task;
+  return getTaskRecordById(task.id);
 }
 
 export async function updateProjectTask(taskId: string, userId: string, input: UpdateTaskInput) {
@@ -192,9 +239,7 @@ export async function updateProjectTask(taskId: string, userId: string, input: U
 
   if (isMovingLists || isRepositioning) {
     const destinationSiblings = await getTaskOrderRows(existingTask.projectId, nextListId ?? null);
-    const destinationIds = destinationSiblings
-      .map((task) => task.id)
-      .filter((id) => id !== taskId);
+    const destinationIds = destinationSiblings.map((task) => task.id).filter((id) => id !== taskId);
     const targetPosition = clampPosition(
       input.position ?? destinationIds.length,
       destinationIds.length,
@@ -224,17 +269,7 @@ export async function updateProjectTask(taskId: string, userId: string, input: U
 
     await persistTaskOrder(existingTask.projectId, nextListId ?? null, destinationIds);
 
-    const [normalizedTask] = await db
-      .select()
-      .from(tasks)
-      .where(eq(tasks.id, taskId))
-      .limit(1);
-
-    if (!normalizedTask) {
-      throw new Error("NotFound");
-    }
-
-    return normalizedTask;
+    return getTaskRecordById(taskId);
   }
 
   const [task] = await db
@@ -251,7 +286,7 @@ export async function updateProjectTask(taskId: string, userId: string, input: U
     throw new Error("NotFound");
   }
 
-  return task;
+  return getTaskRecordById(taskId);
 }
 
 export async function deleteProjectTask(taskId: string, userId: string) {

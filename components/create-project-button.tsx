@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Plus, X } from "lucide-react"
+import { useState } from "react";
+import { Plus, X } from "lucide-react";
 
 export function CreateProjectButton() {
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
@@ -21,10 +21,7 @@ export function CreateProjectButton() {
           <div className="bg-card rounded-lg p-6 w-full max-w-md mx-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-foreground">Create New Project</h3>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="p-1 hover:bg-muted rounded"
-              >
+              <button onClick={() => setIsOpen(false)} className="p-1 hover:bg-muted rounded">
                 <X size={20} />
               </button>
             </div>
@@ -53,9 +50,7 @@ export function CreateProjectButton() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Due Date
-                </label>
+                <label className="block text-sm font-medium text-foreground mb-2">Due Date</label>
                 <input
                   type="date"
                   className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
@@ -82,6 +77,5 @@ export function CreateProjectButton() {
         </div>
       )}
     </>
-  )
+  );
 }
-

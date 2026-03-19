@@ -85,18 +85,24 @@ export async function listAccessibleProjects(userId: string, clerkOrgId: string)
     .from(projects)
     .innerJoin(
       projectMembers,
-      and(
-        eq(projectMembers.projectId, projects.id),
-        eq(projectMembers.userId, userId),
-      ),
+      and(eq(projectMembers.projectId, projects.id), eq(projectMembers.userId, userId)),
     )
     .innerJoin(workspaces, eq(workspaces.id, projects.workspaceId))
     .where(eq(workspaces.clerkOrgId, clerkOrgId))
     .orderBy(desc(projects.createdAt));
 }
 
-export async function getAccessibleProjectById(projectId: string, userId: string, clerkOrgId: string) {
-  const membership = await assertProjectRole(projectId, userId, ["owner", "admin", "member", "viewer"]);
+export async function getAccessibleProjectById(
+  projectId: string,
+  userId: string,
+  clerkOrgId: string,
+) {
+  const membership = await assertProjectRole(projectId, userId, [
+    "owner",
+    "admin",
+    "member",
+    "viewer",
+  ]);
   const [project] = await db
     .select({
       id: projects.id,
@@ -130,7 +136,11 @@ export async function getAccessibleProjectById(projectId: string, userId: string
   };
 }
 
-export async function createOwnedProject(userId: string, clerkOrgId: string, input: CreateProjectInput) {
+export async function createOwnedProject(
+  userId: string,
+  clerkOrgId: string,
+  input: CreateProjectInput,
+) {
   const workspace = await requireWorkspaceForClerkOrg(clerkOrgId, userId);
 
   const [project] = await db

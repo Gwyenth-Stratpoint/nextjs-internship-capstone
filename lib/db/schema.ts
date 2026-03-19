@@ -30,26 +30,13 @@ import {
 // --------------------
 
 // Workspace-level coarse access (for managing workspace/team)
-export const workspaceRoleEnum = pgEnum("workspace_role", [
-  "owner",
-  "admin",
-  "member",
-]);
+export const workspaceRoleEnum = pgEnum("workspace_role", ["owner", "admin", "member"]);
 
 // Project-level RBAC role (Phase 6.4 “project member management and permissions”)
-export const projectRoleEnum = pgEnum("project_role", [
-  "owner",
-  "admin",
-  "member",
-  "viewer",
-]);
+export const projectRoleEnum = pgEnum("project_role", ["owner", "admin", "member", "viewer"]);
 
 // Invitation / membership status for workspace members
-export const membershipStatusEnum = pgEnum("membership_status", [
-  "invited",
-  "active",
-  "suspended",
-]);
+export const membershipStatusEnum = pgEnum("membership_status", ["invited", "active", "suspended"]);
 
 export const taskPriorityEnum = pgEnum("task_priority", [
   "none",
@@ -59,18 +46,9 @@ export const taskPriorityEnum = pgEnum("task_priority", [
   "urgent",
 ]);
 
-export const taskStatusEnum = pgEnum("task_status", [
-  "open",
-  "in_progress",
-  "blocked",
-  "done",
-]);
+export const taskStatusEnum = pgEnum("task_status", ["open", "in_progress", "blocked", "done"]);
 
-export const listCategoryEnum = pgEnum("list_category", [
-  "todo",
-  "in_progress",
-  "done",
-]);
+export const listCategoryEnum = pgEnum("list_category", ["todo", "in_progress", "done"]);
 
 export const activityActionEnum = pgEnum("activity_action", [
   "created",
@@ -96,12 +74,8 @@ export const users = pgTable(
     email: text("email").notNull(),
     name: text("name"),
     avatarUrl: text("avatar_url"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     clerkIdUnique: uniqueIndex("users_clerk_id_unique").on(t.clerkId),
@@ -125,12 +99,8 @@ export const workspaces = pgTable(
       onDelete: "set null",
     }),
 
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 
     archived: boolean("archived").notNull().default(false),
   },
@@ -170,12 +140,8 @@ export const workspaceMembers = pgTable(
     invitedAt: timestamp("invited_at", { withTimezone: true }),
     joinedAt: timestamp("joined_at", { withTimezone: true }),
 
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     pk: primaryKey({ columns: [t.workspaceId, t.userId] }),
@@ -208,21 +174,14 @@ export const projects = pgTable(
       onDelete: "set null",
     }),
 
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 
     archived: boolean("archived").notNull().default(false),
   },
   (t) => ({
     workspaceIdx: index("projects_workspace_id_idx").on(t.workspaceId),
-    keyPerWorkspaceUnique: uniqueIndex("projects_workspace_key_unique").on(
-      t.workspaceId,
-      t.key,
-    ),
+    keyPerWorkspaceUnique: uniqueIndex("projects_workspace_key_unique").on(t.workspaceId, t.key),
   }),
 );
 
@@ -240,12 +199,8 @@ export const projectMembers = pgTable(
 
     role: projectRoleEnum("role").notNull().default("member"),
 
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     pk: primaryKey({ columns: [t.projectId, t.userId] }),
@@ -270,21 +225,14 @@ export const lists = pgTable(
     position: integer("position").notNull().default(0), // for ordering columns
     category: listCategoryEnum("category").notNull().default("todo"),
 
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 
     archived: boolean("archived").notNull().default(false),
   },
   (t) => ({
     projectIdx: index("lists_project_id_idx").on(t.projectId),
-    projectPositionIdx: index("lists_project_position_idx").on(
-      t.projectId,
-      t.position,
-    ),
+    projectPositionIdx: index("lists_project_position_idx").on(t.projectId, t.position),
   }),
 );
 
@@ -327,12 +275,8 @@ export const tasks = pgTable(
 
     archived: boolean("archived").notNull().default(false),
 
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     projectIdx: index("tasks_project_id_idx").on(t.projectId),
@@ -355,9 +299,7 @@ export const taskCollaborators = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     pk: primaryKey({ columns: [t.taskId, t.userId] }),
@@ -382,16 +324,11 @@ export const labels = pgTable(
     // UI color can be stored as string (e.g., "#AABBCC") if you want.
     color: text("color"),
 
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     projectIdx: index("labels_project_id_idx").on(t.projectId),
-    uniqPerProject: uniqueIndex("labels_project_name_unique").on(
-      t.projectId,
-      t.name,
-    ),
+    uniqPerProject: uniqueIndex("labels_project_name_unique").on(t.projectId, t.name),
   }),
 );
 
@@ -430,12 +367,8 @@ export const comments = pgTable(
     // renamed from `body` -> `content` to align with TODO naming
     content: text("content").notNull(),
 
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 
     deleted: boolean("deleted").notNull().default(false),
   },
@@ -474,9 +407,7 @@ export const activity = pgTable(
     // Example: { field: "status", from: "open", to: "in_progress" }
     meta: jsonb("meta").notNull().default({}),
 
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     wsIdx: index("activity_workspace_id_idx").on(t.workspaceId),
@@ -507,9 +438,7 @@ export const attachments = pgTable(
     fileSize: integer("file_size"), // bytes
     url: text("url").notNull(), // where the file lives (S3/R2/etc)
 
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     taskIdx: index("attachments_task_id_idx").on(t.taskId),

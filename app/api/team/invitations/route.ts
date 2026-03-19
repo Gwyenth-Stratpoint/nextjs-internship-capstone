@@ -25,7 +25,10 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return Response.json(
-        { success: false, error: { code: "BAD_REQUEST", message: error.issues[0]?.message ?? "Invalid invite" } },
+        {
+          success: false,
+          error: { code: "BAD_REQUEST", message: error.issues[0]?.message ?? "Invalid invite" },
+        },
         { status: 400 },
       );
     }
@@ -39,14 +42,20 @@ export async function POST(request: Request) {
 
     if (error instanceof Error && error.message === "OrganizationRequired") {
       return Response.json(
-        { success: false, error: { code: "ORGANIZATION_REQUIRED", message: "Select a workspace first" } },
+        {
+          success: false,
+          error: { code: "ORGANIZATION_REQUIRED", message: "Select a workspace first" },
+        },
         { status: 400 },
       );
     }
 
     console.error("POST /api/team/invitations failed:", error);
     return Response.json(
-      { success: false, error: { code: "INTERNAL_SERVER_ERROR", message: "Failed to send invite" } },
+      {
+        success: false,
+        error: { code: "INTERNAL_SERVER_ERROR", message: "Failed to send invite" },
+      },
       { status: 500 },
     );
   }

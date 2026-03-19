@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { useEffect, useState } from "react"
-import { ArrowUpRight, CalendarDays, FolderOpen, Shield, Users } from "lucide-react"
-import { z } from "zod"
+import Link from "next/link";
+import { useState } from "react";
+import { ArrowUpRight, CalendarDays, FolderOpen, Shield, Users } from "lucide-react";
+import { z } from "zod";
 
-import { projectSchema } from "@/lib/validations"
+import { projectSchema } from "@/lib/validations";
 import {
   CenteredModalSurface,
   ModalBackdrop,
@@ -13,35 +13,33 @@ import {
   ModalFooter,
   ModalHeader,
   ModalInputShell,
-} from "@/components/modals/modal-primitives"
+} from "@/components/modals/modal-primitives";
 
-const createProjectFormSchema = projectSchema
-  .omit({ workspaceId: true, key: true })
-  .extend({
-    dueDate: z.string().optional(),
-    template: z.enum(["simple", "software"]).default("simple"),
-    privacy: z.enum(["workspace", "private"]).default("workspace"),
-  })
+const createProjectFormSchema = projectSchema.omit({ workspaceId: true, key: true }).extend({
+  dueDate: z.string().optional(),
+  template: z.enum(["simple", "software"]).default("simple"),
+  privacy: z.enum(["workspace", "private"]).default("workspace"),
+});
 
 type CreateProjectDraft = {
-  name: string
-  description: string
-  dueDate: string
-  template: "simple" | "software"
-  privacy: "workspace" | "private"
-}
+  name: string;
+  description: string;
+  dueDate: string;
+  template: "simple" | "software";
+  privacy: "workspace" | "private";
+};
 
 type CreateProjectModalProps = {
-  isOpen: boolean
-  isSubmitting?: boolean
-  onClose: () => void
+  isOpen: boolean;
+  isSubmitting?: boolean;
+  onClose: () => void;
   onSubmit: (input: {
-    name: string
-    description?: string | null
-    dueDate?: string | null
-    template?: "simple" | "software"
-  }) => Promise<void>
-}
+    name: string;
+    description?: string | null;
+    dueDate?: string | null;
+    template?: "simple" | "software";
+  }) => Promise<void>;
+};
 
 const emptyProject: CreateProjectDraft = {
   name: "",
@@ -49,7 +47,7 @@ const emptyProject: CreateProjectDraft = {
   dueDate: "",
   template: "simple",
   privacy: "workspace",
-}
+};
 
 export function CreateProjectModal({
   isOpen,
@@ -57,41 +55,34 @@ export function CreateProjectModal({
   onClose,
   onSubmit,
 }: CreateProjectModalProps) {
-  const [form, setForm] = useState<CreateProjectDraft>(emptyProject)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!isOpen) return
-
-    setForm(emptyProject)
-    setError(null)
-  }, [isOpen])
+  const [form, setForm] = useState<CreateProjectDraft>(emptyProject);
+  const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) {
-    return null
+    return null;
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+    event.preventDefault();
 
-    const parsed = createProjectFormSchema.safeParse(form)
+    const parsed = createProjectFormSchema.safeParse(form);
 
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? "Invalid project details")
-      return
+      setError(parsed.error.issues[0]?.message ?? "Invalid project details");
+      return;
     }
 
     try {
-      setError(null)
+      setError(null);
       await onSubmit({
         name: parsed.data.name.trim(),
         description: parsed.data.description?.trim() || null,
         dueDate: parsed.data.dueDate || null,
         template: parsed.data.template,
-      })
-      onClose()
+      });
+      onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create project")
+      setError(err instanceof Error ? err.message : "Failed to create project");
     }
   }
 
@@ -115,7 +106,10 @@ export function CreateProjectModal({
               <select
                 value={form.template}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, template: event.target.value as "simple" | "software" }))
+                  setForm((current) => ({
+                    ...current,
+                    template: event.target.value as "simple" | "software",
+                  }))
                 }
                 className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3.5 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               >
@@ -131,7 +125,9 @@ export function CreateProjectModal({
                 <input
                   type="date"
                   value={form.dueDate}
-                  onChange={(event) => setForm((current) => ({ ...current, dueDate: event.target.value }))}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, dueDate: event.target.value }))
+                  }
                   className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3.5 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </ModalInputShell>
@@ -142,7 +138,10 @@ export function CreateProjectModal({
                 <select
                   value={form.privacy}
                   onChange={(event) =>
-                    setForm((current) => ({ ...current, privacy: event.target.value as "workspace" | "private" }))
+                    setForm((current) => ({
+                      ...current,
+                      privacy: event.target.value as "workspace" | "private",
+                    }))
                   }
                   disabled
                   className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-3.5 text-sm text-slate-400 outline-none"
@@ -157,7 +156,9 @@ export function CreateProjectModal({
           <ModalField label="Description">
             <textarea
               value={form.description}
-              onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, description: event.target.value }))
+              }
               rows={4}
               className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               placeholder="Leave any project notes here (optional)..."
@@ -193,5 +194,5 @@ export function CreateProjectModal({
         </form>
       </CenteredModalSurface>
     </ModalBackdrop>
-  )
+  );
 }

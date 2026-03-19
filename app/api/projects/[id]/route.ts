@@ -35,7 +35,10 @@ export async function GET(_request: Request, context: RouteContext) {
 
     if (error instanceof Error && error.message === "OrganizationRequired") {
       return Response.json(
-        { success: false, error: { code: "ORGANIZATION_REQUIRED", message: "Select a workspace first" } },
+        {
+          success: false,
+          error: { code: "ORGANIZATION_REQUIRED", message: "Select a workspace first" },
+        },
         { status: 400 },
       );
     }

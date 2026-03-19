@@ -3,9 +3,7 @@
 /*
 TODO: Implementation Notes for Interns: */
 
-
 import { z } from "zod";
-
 
 const uuid = z.string().uuid();
 
@@ -25,7 +23,6 @@ export const workspaceMemberSchema = z.object({
   title: z.string().max(80, "Title too long").nullable().optional(),
   status: z.enum(["invited", "active", "suspended"]).optional(),
 });
-
 
 export const projectSchema = z.object({
   workspaceId: uuid,
@@ -65,7 +62,6 @@ export const projectMemberSchema = z.object({
   role: z.enum(["owner", "admin", "member", "viewer"]),
 });
 
-
 export const listSchema = z.object({
   projectId: uuid,
   name: z.string().min(1, "Name is required").max(60, "Name too long"),
@@ -86,7 +82,6 @@ export const listReorderSchema = z.object({
   projectId: uuid,
   orderedListIds: z.array(uuid).min(1, "At least one list id is required"),
 });
-
 
 export const taskSchema = z.object({
   projectId: uuid,
@@ -129,12 +124,10 @@ export const taskReorderSchema = z.object({
   orderedTaskIds: z.array(uuid).min(1, "At least one task id is required"),
 });
 
-
 export const commentSchema = z.object({
   taskId: uuid,
   content: z.string().min(1, "Comment is required").max(2000, "Comment too long"),
 });
-
 
 export const userSchema = z.object({
   name: z.string().max(120, "Name too long").nullable().optional(),

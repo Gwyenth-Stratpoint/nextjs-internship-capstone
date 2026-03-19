@@ -14,7 +14,13 @@ export async function PATCH(request: Request) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return Response.json(
-        { success: false, error: { code: "BAD_REQUEST", message: error.issues[0]?.message ?? "Invalid reorder payload" } },
+        {
+          success: false,
+          error: {
+            code: "BAD_REQUEST",
+            message: error.issues[0]?.message ?? "Invalid reorder payload",
+          },
+        },
         { status: 400 },
       );
     }
@@ -26,9 +32,21 @@ export async function PATCH(request: Request) {
       );
     }
 
-    if (error instanceof Error && (error.message === "Forbidden" || error.message === "OrderMismatch")) {
+    if (
+      error instanceof Error &&
+      (error.message === "Forbidden" || error.message === "OrderMismatch")
+    ) {
       return Response.json(
-        { success: false, error: { code: "FORBIDDEN", message: error.message === "OrderMismatch" ? "List order does not match project lists" : "Forbidden" } },
+        {
+          success: false,
+          error: {
+            code: "FORBIDDEN",
+            message:
+              error.message === "OrderMismatch"
+                ? "List order does not match project lists"
+                : "Forbidden",
+          },
+        },
         { status: 403 },
       );
     }

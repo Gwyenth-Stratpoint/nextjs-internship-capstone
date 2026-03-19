@@ -1,6 +1,39 @@
-import { BarChart3, TrendingUp, Users, Clock } from "lucide-react"
+import { BarChart3, TrendingUp, Users, Clock } from "lucide-react";
+
+import { Card, CardContent, CardHeader, CardInset, CardTitle } from "@/components/ui/card";
 
 export default function AnalyticsPage() {
+  const metrics = [
+    {
+      title: "Project Velocity",
+      value: "8.5",
+      unit: "tasks/week",
+      icon: TrendingUp,
+      colorClass: "bg-blue-100 text-blue-500",
+    },
+    {
+      title: "Team Efficiency",
+      value: "92%",
+      unit: "completion rate",
+      icon: BarChart3,
+      colorClass: "bg-green-100 text-green-500",
+    },
+    {
+      title: "Active Users",
+      value: "24",
+      unit: "this week",
+      icon: Users,
+      colorClass: "bg-purple-100 text-purple-500",
+    },
+    {
+      title: "Avg. Task Time",
+      value: "2.3",
+      unit: "days",
+      icon: Clock,
+      colorClass: "bg-orange-100 text-orange-500",
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div>
@@ -23,55 +56,58 @@ export default function AnalyticsPage() {
 
       {/* Analytics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[
-          { title: "Project Velocity", value: "8.5", unit: "tasks/week", icon: TrendingUp, color: "blue" },
-          { title: "Team Efficiency", value: "92%", unit: "completion rate", icon: BarChart3, color: "green" },
-          { title: "Active Users", value: "24", unit: "this week", icon: Users, color: "purple" },
-          { title: "Avg. Task Time", value: "2.3", unit: "days", icon: Clock, color: "orange" },
-        ].map((metric, index) => (
-          <div
-            key={index}
-            className="bg-card rounded-lg border border-border p-6"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div
-                className={`w-10 h-10 bg-${metric.color}-100 dark:bg-${metric.color}-900 rounded-lg flex items-center justify-center`}
-              >
-                <metric.icon className={`text-${metric.color}-500`} size={20} />
-              </div>
-            </div>
-            <div className="text-2xl font-bold text-foreground mb-1">{metric.value}</div>
-            <div className="text-sm text-muted-foreground mb-2">{metric.unit}</div>
-            <div className="text-xs font-medium text-foreground">{metric.title}</div>
-          </div>
+        {metrics.map((metric) => (
+          <Card key={metric.title}>
+            <CardContent className="p-6">
+              <CardInset className="p-4">
+                <div className="mb-4 flex items-center justify-between">
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-lg ${metric.colorClass}`}
+                  >
+                    <metric.icon size={20} />
+                  </div>
+                </div>
+                <div className="mb-1 text-2xl font-bold text-foreground">{metric.value}</div>
+                <div className="mb-2 text-sm text-muted-foreground">{metric.unit}</div>
+                <div className="text-xs font-medium text-foreground">{metric.title}</div>
+              </CardInset>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
       {/* Charts Placeholder */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-card rounded-lg border border-border p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">Project Progress</h3>
-          <div className="h-64 bg-muted rounded-lg flex items-center justify-center">
-            <div className="text-center text-muted-foreground">
-              <BarChart3 size={48} className="mx-auto mb-2" />
-              <p>Chart Component Placeholder</p>
-              <p className="text-sm">TODO: Implement with Chart.js or Recharts</p>
+        <Card>
+          <CardHeader>
+            <CardTitle>Project Progress</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64 bg-muted rounded-lg flex items-center justify-center">
+              <div className="text-center text-muted-foreground">
+                <BarChart3 size={48} className="mx-auto mb-2" />
+                <p>Chart Component Placeholder</p>
+                <p className="text-sm">TODO: Implement with Chart.js or Recharts</p>
+              </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        <div className="bg-card rounded-lg border border-border p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">Team Activity</h3>
-          <div className="h-64 bg-muted rounded-lg flex items-center justify-center">
-            <div className="text-center text-muted-foreground">
-              <TrendingUp size={48} className="mx-auto mb-2" />
-              <p>Activity Chart Placeholder</p>
-              <p className="text-sm">TODO: Implement activity timeline</p>
+        <Card>
+          <CardHeader>
+            <CardTitle>Team Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64 bg-muted rounded-lg flex items-center justify-center">
+              <div className="text-center text-muted-foreground">
+                <TrendingUp size={48} className="mx-auto mb-2" />
+                <p>Activity Chart Placeholder</p>
+                <p className="text-sm">TODO: Implement activity timeline</p>
+              </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
-  )
+  );
 }
-

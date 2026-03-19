@@ -14,7 +14,13 @@ export async function PATCH(request: Request) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return Response.json(
-        { success: false, error: { code: "BAD_REQUEST", message: error.issues[0]?.message ?? "Invalid reorder payload" } },
+        {
+          success: false,
+          error: {
+            code: "BAD_REQUEST",
+            message: error.issues[0]?.message ?? "Invalid reorder payload",
+          },
+        },
         { status: 400 },
       );
     }
@@ -28,7 +34,9 @@ export async function PATCH(request: Request) {
 
     if (
       error instanceof Error &&
-      (error.message === "Forbidden" || error.message === "OrderMismatch" || error.message === "InvalidList")
+      (error.message === "Forbidden" ||
+        error.message === "OrderMismatch" ||
+        error.message === "InvalidList")
     ) {
       return Response.json(
         {

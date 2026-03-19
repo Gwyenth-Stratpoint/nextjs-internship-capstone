@@ -1,61 +1,63 @@
-"use client"
+"use client";
 
-import { CardBadge, CardHeader, CardMetaRow, CardSurface } from "@/components/cards/card-primitives"
+import Image from "next/image";
+import { CalendarDays, MessageSquare, User } from "lucide-react";
+
+import { CardBadge, CardInset as CardSurface } from "@/components/ui/card";
 
 type TaskCardProps = {
   task: {
-    id: string
-    title: string
-    description?: string | null
-    priority: "none" | "low" | "medium" | "high" | "urgent"
-    status: "open" | "in_progress" | "blocked" | "done"
-    dueDate?: string | null
-    position: number
-  }
-  onEdit?: (id: string) => void
-  draggable?: boolean
-  onDragStart?: (id: string) => void
-  onDragEnd?: () => void
-  onDragOver?: () => void
-  onDrop?: () => void
-  isDragging?: boolean
-  isDropTarget?: boolean
-}
-
-function getTaskStatusTone(status: TaskCardProps["task"]["status"]) {
-  switch (status) {
-    case "done":
-      return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
-    case "in_progress":
-      return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-    case "blocked":
-      return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
-    default:
-      return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-  }
-}
+    id: string;
+    title: string;
+    description?: string | null;
+    priority: "none" | "low" | "medium" | "high" | "urgent";
+    status: "open" | "in_progress" | "blocked" | "done";
+    dueDate?: string | null;
+    position: number;
+    reporterName?: string | null;
+    reporterAvatarUrl?: string | null;
+    commentCount?: number;
+  };
+  onEdit?: (id: string) => void;
+  draggable?: boolean;
+  onDragStart?: (id: string) => void;
+  onDragEnd?: () => void;
+  onDragOver?: () => void;
+  onDrop?: () => void;
+  isDragging?: boolean;
+  isDropTarget?: boolean;
+};
 
 function getPriorityTone(priority: TaskCardProps["task"]["priority"]) {
   switch (priority) {
     case "urgent":
     case "high":
-      return "text-red-600 dark:text-red-400"
+      return "border-red-100 bg-red-50 text-red-600 dark:border-red-900/30 dark:bg-red-900/20 dark:text-red-300";
     case "medium":
-      return "text-yellow-600 dark:text-yellow-400"
+      return "border-amber-100 bg-amber-50 text-amber-600 dark:border-amber-900/30 dark:bg-amber-900/20 dark:text-amber-300";
     case "low":
-      return "text-green-600 dark:text-green-400"
+      return "border-emerald-100 bg-emerald-50 text-emerald-600 dark:border-emerald-900/30 dark:bg-emerald-900/20 dark:text-emerald-300";
     default:
-      return "text-muted-foreground"
+      return "border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300";
   }
 }
 
 function formatDate(value?: string | null) {
-  if (!value) return null
+  if (!value) return null;
 
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
-  }).format(new Date(value))
+  }).format(new Date(value));
+}
+
+function formatPriorityLabel(priority: TaskCardProps["task"]["priority"]) {
+  return priority === "none" ? "Backlog" : priority;
+}
+
+function getReporterInitial(name?: string | null) {
+  if (!name) return null;
+  return name.trim().charAt(0).toUpperCase() || null;
 }
 
 export function TaskCard({
@@ -69,7 +71,8 @@ export function TaskCard({
   isDragging = false,
   isDropTarget = false,
 }: TaskCardProps) {
-  const canEdit = typeof onEdit === "function"
+  const canEdit = typeof onEdit === "function";
+  const reporterInitial = getReporterInitial(task.reporterName);
 
   return (
     <CardSurface
@@ -82,17 +85,17 @@ export function TaskCard({
       onDragOver={
         draggable
           ? (event) => {
-              event.preventDefault()
-              onDragOver?.()
+              event.preventDefault();
+              onDragOver?.();
             }
           : undefined
       }
       onDrop={
         draggable
           ? (event) => {
-              event.preventDefault()
-              event.stopPropagation()
-              onDrop?.()
+              event.preventDefault();
+              event.stopPropagation();
+              onDrop?.();
             }
           : undefined
       }
@@ -100,38 +103,60 @@ export function TaskCard({
         canEdit
           ? (event) => {
               if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault()
-                onEdit?.(task.id)
+                event.preventDefault();
+                onEdit?.(task.id);
               }
             }
           : undefined
       }
-      isInteractive={canEdit}
-      className={`${isDragging ? "opacity-50" : ""} ${isDropTarget ? "ring-2 ring-blue-300" : ""}`}
+      interactive={canEdit}
+      className={`rounded-[18px] p-3 ${isDragging ? "opacity-50" : ""} ${isDropTarget ? "ring-2 ring-blue-300" : ""}`}
     >
-      <CardHeader
-        title={task.title}
-        description={task.description ?? "No description"}
-        badge={
-          <CardBadge className={getTaskStatusTone(task.status)}>
-            {task.status.replace("_", " ")}
+      <div className="space-y-3">
+        <div className="flex items-start justify-between gap-2">
+          <h4 className="min-w-0 break-words text-[13px] font-semibold leading-5 text-foreground">
+            {task.title}
+          </h4>
+          <div
+            className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200/80 bg-[linear-gradient(135deg,#7C6EE6_0%,#4F8DF6_100%)] text-[11px] font-semibold text-white"
+            title={task.reporterName ?? "Task creator"}
+          >
+            {task.reporterAvatarUrl ? (
+              <Image
+                src={task.reporterAvatarUrl}
+                alt={task.reporterName ?? "Task creator"}
+                width={28}
+                height={28}
+                className="h-full w-full object-cover"
+              />
+            ) : reporterInitial ? (
+              <span>{reporterInitial}</span>
+            ) : (
+              <User size={14} />
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center">
+          <CardBadge
+            className={`border px-2 py-0.5 text-[10px] font-semibold capitalize ${getPriorityTone(task.priority)}`}
+          >
+            {formatPriorityLabel(task.priority)}
           </CardBadge>
-        }
-      />
+        </div>
 
-      <CardMetaRow
-        left={<span className={getPriorityTone(task.priority)}>Priority: {task.priority}</span>}
-        right={<span className="text-muted-foreground">Position {task.position}</span>}
-      />
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <CalendarDays size={12} className="shrink-0 text-slate-400" />
+            <span>{task.dueDate ? formatDate(task.dueDate) : "No deadline"}</span>
+          </div>
 
-      <CardMetaRow
-        left={
-          <span className="text-muted-foreground">
-            {task.dueDate ? `Due ${formatDate(task.dueDate)}` : "No due date"}
-          </span>
-        }
-        right={canEdit ? <span className="text-muted-foreground">Open task</span> : null}
-      />
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <MessageSquare size={13} className="shrink-0 text-slate-400" />
+            <span>{task.commentCount ?? 0}</span>
+          </div>
+        </div>
+      </div>
     </CardSurface>
-  )
+  );
 }

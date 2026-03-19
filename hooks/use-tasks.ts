@@ -15,6 +15,9 @@ type TaskFromApi = {
   reporterId: string | null;
   dueDate: string | null;
   startDate: string | null;
+  reporterName: string | null;
+  reporterAvatarUrl: string | null;
+  commentCount: number;
   archived: boolean;
   createdAt: string;
   updatedAt: string;
@@ -69,7 +72,28 @@ type ReorderTasksInput = {
   orderedTaskIds: string[];
 };
 
-function normalizeTask(input: any): TaskFromApi {
+type TaskApiRecord = {
+  id: string;
+  projectId: string;
+  listId?: string | null;
+  position?: number | string | null;
+  title: string;
+  description?: string | null;
+  status: TaskFromApi["status"];
+  priority: TaskFromApi["priority"];
+  assigneeId?: string | null;
+  reporterId?: string | null;
+  dueDate?: string | Date | null;
+  startDate?: string | Date | null;
+  reporterName?: string | null;
+  reporterAvatarUrl?: string | null;
+  commentCount?: number | string | null;
+  archived?: boolean | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+};
+
+function normalizeTask(input: TaskApiRecord): TaskFromApi {
   return {
     id: input.id,
     projectId: input.projectId,
@@ -83,6 +107,9 @@ function normalizeTask(input: any): TaskFromApi {
     reporterId: input.reporterId ?? null,
     dueDate: input.dueDate ? new Date(input.dueDate).toISOString() : null,
     startDate: input.startDate ? new Date(input.startDate).toISOString() : null,
+    reporterName: input.reporterName ?? null,
+    reporterAvatarUrl: input.reporterAvatarUrl ?? null,
+    commentCount: Number(input.commentCount ?? 0),
     archived: Boolean(input.archived),
     createdAt: new Date(input.createdAt).toISOString(),
     updatedAt: new Date(input.updatedAt).toISOString(),
@@ -170,6 +197,9 @@ export function useTasks(projectId: string) {
         reporterId: payload.reporterId ?? null,
         dueDate: payload.dueDate ?? null,
         startDate: payload.startDate ?? null,
+        reporterName: null,
+        reporterAvatarUrl: null,
+        commentCount: 0,
         archived: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -338,6 +368,17 @@ export function useTasks(projectId: string) {
       reorderTasks,
       moveTask,
     }),
-    [tasks, isLoading, error, isPending, fetchTasks, createTask, updateTask, deleteTask, reorderTasks, moveTask],
+    [
+      tasks,
+      isLoading,
+      error,
+      isPending,
+      fetchTasks,
+      createTask,
+      updateTask,
+      deleteTask,
+      reorderTasks,
+      moveTask,
+    ],
   );
 }

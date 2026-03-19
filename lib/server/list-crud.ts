@@ -2,10 +2,7 @@ import { asc, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { lists } from "@/lib/db/schema";
-import {
-  assertProjectRole,
-  getProjectMembership,
-} from "@/lib/server/project-permissions";
+import { assertProjectRole, getProjectMembership } from "@/lib/server/project-permissions";
 
 type CreateListInput = {
   projectId: string;
@@ -28,11 +25,14 @@ type ReorderListsInput = {
 
 export type ProjectTemplate = "simple" | "software";
 
-const PROJECT_TEMPLATE_LISTS: Record<ProjectTemplate, Array<{
-  name: string;
-  position: number;
-  category: "todo" | "in_progress" | "done";
-}>> = {
+const PROJECT_TEMPLATE_LISTS: Record<
+  ProjectTemplate,
+  Array<{
+    name: string;
+    position: number;
+    category: "todo" | "in_progress" | "done";
+  }>
+> = {
   simple: [
     {
       name: "Backlog",
@@ -120,7 +120,10 @@ async function assertUniqueTerminalCategory(
   }
 }
 
-export async function ensureProjectDefaultLists(projectId: string, template: ProjectTemplate = "simple") {
+export async function ensureProjectDefaultLists(
+  projectId: string,
+  template: ProjectTemplate = "simple",
+) {
   const existingLists = await getProjectListRows(projectId);
 
   if (existingLists.length > 0) {
@@ -141,8 +144,7 @@ export async function ensureProjectDefaultLists(projectId: string, template: Pro
 
 async function persistListOrder(projectId: string, orderedListIds?: string[]) {
   const resolvedIds =
-    orderedListIds ??
-    (await getProjectListRows(projectId)).map((list) => list.id);
+    orderedListIds ?? (await getProjectListRows(projectId)).map((list) => list.id);
 
   for (const [position, listId] of resolvedIds.entries()) {
     await db
@@ -185,12 +187,7 @@ async function getAccessibleList(listId: string, userId: string) {
 }
 
 export async function listProjectLists(projectId: string, userId: string) {
-  await assertProjectRole(projectId, userId, [
-    "owner",
-    "admin",
-    "member",
-    "viewer",
-  ]);
+  await assertProjectRole(projectId, userId, ["owner", "admin", "member", "viewer"]);
 
   await ensureProjectDefaultLists(projectId);
 
@@ -201,10 +198,7 @@ export async function listProjectLists(projectId: string, userId: string) {
     .orderBy(asc(lists.position), asc(lists.createdAt));
 }
 
-export async function createProjectList(
-  userId: string,
-  input: CreateListInput,
-) {
+export async function createProjectList(userId: string, input: CreateListInput) {
   await assertProjectRole(input.projectId, userId, ["owner", "admin"]);
   await assertUniqueTerminalCategory(input.projectId, input.category ?? "in_progress");
   const existingLists = await getProjectListRows(input.projectId);
@@ -240,11 +234,7 @@ export async function createProjectList(
   return createdList;
 }
 
-export async function updateProjectList(
-  listId: string,
-  userId: string,
-  input: UpdateListInput,
-) {
+export async function updateProjectList(listId: string, userId: string, input: UpdateListInput) {
   const existingList = await getAccessibleList(listId, userId);
   await assertProjectRole(existingList.projectId, userId, ["owner", "admin"]);
   const nextCategory = input.category ?? existingList.category;
@@ -277,11 +267,7 @@ export async function updateProjectList(
     siblingIds.splice(targetPosition, 0, listId);
     await persistListOrder(existingList.projectId, siblingIds);
 
-    const [normalizedList] = await db
-      .select()
-      .from(lists)
-      .where(eq(lists.id, listId))
-      .limit(1);
+    const [normalizedList] = await db.select().from(lists).where(eq(lists.id, listId)).limit(1);
 
     if (!normalizedList) {
       throw new Error("NotFound");
@@ -303,11 +289,7 @@ export async function updateProjectList(
     throw new Error("NotFound");
   }
 
-  const [normalizedList] = await db
-    .select()
-    .from(lists)
-    .where(eq(lists.id, listId))
-    .limit(1);
+  const [normalizedList] = await db.select().from(lists).where(eq(lists.id, listId)).limit(1);
 
   if (!normalizedList) {
     throw new Error("NotFound");
@@ -328,10 +310,7 @@ export async function deleteProjectList(listId: string, userId: string) {
     );
   }
 
-  const [deletedList] = await db
-    .delete(lists)
-    .where(eq(lists.id, listId))
-    .returning();
+  const [deletedList] = await db.delete(lists).where(eq(lists.id, listId)).returning();
 
   if (!deletedList) {
     throw new Error("NotFound");

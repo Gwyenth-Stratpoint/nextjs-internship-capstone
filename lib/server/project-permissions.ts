@@ -55,7 +55,11 @@ export async function getProjectMembership(projectId: string, userId: string) {
   };
 }
 
-export async function assertProjectRole(projectId: string, userId: string, allowedRoles: ProjectRole[]) {
+export async function assertProjectRole(
+  projectId: string,
+  userId: string,
+  allowedRoles: ProjectRole[],
+) {
   const membership = await getProjectMembership(projectId, userId);
 
   if (!membership || !allowedRoles.includes(membership.role)) {

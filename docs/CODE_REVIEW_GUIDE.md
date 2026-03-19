@@ -11,6 +11,7 @@ While each intern works on their own fork independently, code reviews remain val
 Since you own your entire codebase, self-review becomes crucial:
 
 #### Self-Review Checklist
+
 - [ ] Code follows TypeScript and ESLint rules
 - [ ] All tests pass locally (`pnpm test`)
 - [ ] Code is properly formatted (`pnpm lint:fix`)
@@ -20,6 +21,7 @@ Since you own your entire codebase, self-review becomes crucial:
 - [ ] Code is readable and well-documented
 
 #### Code Quality Standards
+
 - [ ] Functions are small and focused (single responsibility)
 - [ ] Variables and functions have descriptive names
 - [ ] Complex logic includes comments explaining the "why"
@@ -29,6 +31,7 @@ Since you own your entire codebase, self-review becomes crucial:
 ### 2. Optional Peer Review Process
 
 #### When to Request Peer Review
+
 - **Stuck on a problem**: Get help from other interns
 - **Learning opportunity**: Share interesting solutions
 - **Before major features**: Get feedback on architecture decisions
@@ -37,6 +40,7 @@ Since you own your entire codebase, self-review becomes crucial:
 #### How to Share Your Code for Review
 
 **Option 1: Share Your Fork**
+
 ```bash
 # Share your repository URL with other interns
 https://github.com/YOUR-USERNAME/nextjs-internship-capstone
@@ -44,32 +48,40 @@ https://github.com/YOUR-USERNAME/nextjs-internship-capstone
 
 **Option 2: Create a Discussion Issue**
 Create an issue in your fork with this template:
+
 ```markdown
 ## 🤔 Looking for Feedback: [Feature Name]
 
 ### What I'm working on
+
 Brief description of the feature or problem.
 
 ### My approach
+
 Explain your implementation approach.
 
 ### Specific questions
+
 - How can I improve this code?
 - Is there a better way to handle X?
 - Any potential issues you see?
 
 ### Code to review
+
 Link to specific files or commits:
+
 - `app/dashboard/page.tsx` - Main dashboard component
 - `lib/auth.ts` - Authentication logic
 
 ### How to test
+
 1. Clone my fork: `git clone https://github.com/YOUR-USERNAME/nextjs-internship-capstone`
 2. Install dependencies: `pnpm install`
 3. Test the feature: [specific steps]
 ```
 
 #### Peer Review Guidelines
+
 - **Voluntary**: All peer reviews are optional and voluntary
 - **Learning focused**: Focus on learning and knowledge sharing
 - **Respectful**: Be constructive and supportive
@@ -80,12 +92,14 @@ Link to specific files or commits:
 #### Sharing Your Solutions
 
 ##### When to Share
+
 - **Breakthrough moments**: Solved a difficult problem
 - **Interesting patterns**: Found a clever solution
 - **Learning discoveries**: Learned something valuable
 - **Common challenges**: Help others avoid similar issues
 
 ##### How to Share
+
 - **Daily standups**: Share quick wins and solutions
 - **Team chat**: Post code snippets and explanations
 - **Documentation**: Update guides with new learnings
@@ -94,6 +108,7 @@ Link to specific files or commits:
 #### Learning from Others
 
 ##### Asking for Help
+
 - **Be specific**: Describe exactly what you're trying to achieve
 - **Share context**: Provide relevant code and error messages
 - **Show attempts**: Explain what you've already tried
@@ -104,26 +119,31 @@ Link to specific files or commits:
 ##### Review Focus Areas
 
 **1. Functionality**
+
 - Does the code do what it's supposed to do?
 - Are edge cases handled appropriately?
 - Is error handling implemented correctly?
 
 **2. Code Quality**
+
 - Is the code readable and maintainable?
 - Are functions and variables well-named?
 - Is the code following project conventions?
 
 **3. Performance**
+
 - Are there any obvious performance issues?
 - Is the code efficiently written?
 - Are there unnecessary re-renders or computations?
 
 **4. Security**
+
 - Are user inputs properly validated?
 - Are sensitive data and secrets handled correctly?
 - Are authentication and authorization working properly?
 
 **5. Testing**
+
 - Are there appropriate tests for new functionality?
 - Do tests cover edge cases and error scenarios?
 - Are tests readable and maintainable?
@@ -131,6 +151,7 @@ Link to specific files or commits:
 ##### Providing Feedback
 
 **Use Constructive Language**
+
 ```
 ❌ "This is wrong"
 ✅ "Consider using useState here instead of useRef for this use case"
@@ -143,12 +164,14 @@ Link to specific files or commits:
 ```
 
 **Categories of Feedback**
+
 - **Must Fix**: Critical issues that prevent merge
 - **Should Fix**: Important improvements that should be addressed
 - **Consider**: Suggestions for improvement (nice to have)
 - **Question**: Asking for clarification or understanding
 
 **Example Comments**
+
 ```
 [MUST FIX] This will cause a runtime error if projects is undefined.
 Add optional chaining: projects?.map()
@@ -164,6 +187,7 @@ I'm curious about the reasoning.
 ```
 
 ##### Review Response Times
+
 - **Initial review**: Within 24 hours
 - **Follow-up reviews**: Within 4-6 hours during work hours
 - **Emergency fixes**: Within 2 hours
@@ -173,6 +197,7 @@ I'm curious about the reasoning.
 #### Next.js Specific Reviews
 
 **Server vs Client Components**
+
 ```typescript
 // ❌ Unnecessary client component
 'use client'
@@ -195,30 +220,31 @@ export function ProjectList({ projects }) {
 ```
 
 **Server Actions Usage**
+
 ```typescript
 // ❌ Missing error handling and validation
 export async function createProject(name: string) {
-  await db.insert(projects).values({ name })
-  revalidatePath('/dashboard')
+  await db.insert(projects).values({ name });
+  revalidatePath("/dashboard");
 }
 
 // ✅ Proper validation and error handling
 export async function createProject(formData: FormData) {
-  const name = formData.get('name') as string
+  const name = formData.get("name") as string;
 
   if (!name || name.trim().length < 3) {
-    throw new Error('Project name must be at least 3 characters')
+    throw new Error("Project name must be at least 3 characters");
   }
 
   try {
     await db.insert(projects).values({
       name: name.trim(),
-      userId: auth().userId
-    })
-    revalidatePath('/dashboard')
+      userId: auth().userId,
+    });
+    revalidatePath("/dashboard");
   } catch (error) {
-    console.error('Failed to create project:', error)
-    throw new Error('Failed to create project')
+    console.error("Failed to create project:", error);
+    throw new Error("Failed to create project");
   }
 }
 ```
@@ -226,23 +252,25 @@ export async function createProject(formData: FormData) {
 #### React Best Practices
 
 **Proper Hooks Usage**
+
 ```typescript
 // ❌ Hooks in conditional
 function TaskCard({ task }) {
-  if (!task) return null
+  if (!task) return null;
 
-  const [isEditing, setIsEditing] = useState(false) // ❌ Hook after conditional
+  const [isEditing, setIsEditing] = useState(false); // ❌ Hook after conditional
 }
 
 // ✅ Hooks at top level
 function TaskCard({ task }) {
-  const [isEditing, setIsEditing] = useState(false) // ✅ Hook at top
+  const [isEditing, setIsEditing] = useState(false); // ✅ Hook at top
 
-  if (!task) return null
+  if (!task) return null;
 }
 ```
 
 **Component Composition**
+
 ```typescript
 // ❌ Prop drilling and tight coupling
 function Dashboard({ user, projects, onCreateProject, onEditProject }) {
@@ -273,6 +301,7 @@ function Dashboard() {
 #### TypeScript Standards
 
 **Proper Type Definitions**
+
 ```typescript
 // ❌ Using any or missing types
 function updateTask(id, data) {
@@ -281,9 +310,9 @@ function updateTask(id, data) {
 
 // ✅ Proper typing
 interface UpdateTaskData {
-  title?: string
-  description?: string
-  status?: TaskStatus
+  title?: string;
+  description?: string;
+  status?: TaskStatus;
 }
 
 function updateTask(id: string, data: UpdateTaskData): Promise<Task> {
@@ -294,12 +323,14 @@ function updateTask(id: string, data: UpdateTaskData): Promise<Task> {
 ### 5. Review Tools and Automation
 
 #### GitHub Features
+
 - **Request reviews**: Always request review from at least one team member
 - **Review comments**: Use line-by-line comments for specific feedback
 - **Suggestions**: Use GitHub's suggestion feature for small fixes
 - **Required reviews**: Main branch requires at least one approval
 
 #### Automated Checks
+
 - **CI/CD Pipeline**: All tests must pass before merge
 - **Type checking**: TypeScript compilation must succeed
 - **Linting**: ESLint rules must pass
@@ -308,12 +339,14 @@ function updateTask(id: string, data: UpdateTaskData): Promise<Task> {
 ### 6. Conflict Resolution
 
 #### When Reviewers Disagree
+
 1. **Discussion**: Have a respectful technical discussion
 2. **Research**: Look up best practices and documentation
 3. **Mentor input**: Escalate to mentor if needed
 4. **Team decision**: Discuss in team meeting if necessary
 
 #### When Reviews Are Delayed
+
 1. **Gentle reminder**: Ping in team chat after 24 hours
 2. **Request different reviewer**: If original reviewer is busy
 3. **Escalate**: Bring to mentor's attention if blocking progress
@@ -321,12 +354,14 @@ function updateTask(id: string, data: UpdateTaskData): Promise<Task> {
 ### 7. Learning from Reviews
 
 #### For Authors
+
 - **Take notes**: Document feedback for future reference
 - **Ask questions**: Understand the reasoning behind suggestions
 - **Apply learnings**: Use feedback to improve future code
 - **Share knowledge**: Help teammates avoid similar issues
 
 #### For Reviewers
+
 - **Learn from others**: See different approaches to problems
 - **Stay updated**: Learn new patterns and best practices
 - **Document patterns**: Contribute to team knowledge base
@@ -335,12 +370,14 @@ function updateTask(id: string, data: UpdateTaskData): Promise<Task> {
 ## Review Metrics and Goals
 
 ### Team Goals
+
 - **Review response time**: < 24 hours for initial review
 - **Code quality**: Maintain high standards while being supportive
 - **Knowledge sharing**: Everyone learns from every review
 - **Constructive culture**: Reviews help growth, not blame
 
 ### Individual Goals
+
 - **Give quality reviews**: Thoughtful, helpful feedback
 - **Receive feedback well**: Open to learning and improvement
 - **Continuous improvement**: Get better at both coding and reviewing

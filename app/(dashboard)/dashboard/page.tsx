@@ -1,18 +1,20 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { CheckCircle, Clock, Plus, TrendingUp, Users } from "lucide-react"
-import { useMemo } from "react"
+import Link from "next/link";
+import { CheckCircle, Clock, Plus, TrendingUp, Users } from "lucide-react";
+import { useMemo } from "react";
 
-import { DashboardStats } from "@/components/dashboard-stats"
-import { RecentProjects } from "@/components/recent-projects"
-import { useProjects } from "@/hooks/use-projects"
+import { DashboardStats } from "@/components/dashboard-stats";
+import { ProjectCard } from "@/components/project-card";
+import { RecentProjects } from "@/components/recent-projects";
+import { Card, CardContent, CardHeader, CardInset, CardTitle } from "@/components/ui/card";
+import { useProjects } from "@/hooks/use-projects";
 
 function DashboardProjectsSkeleton() {
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
       {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index} className="glass-card rounded-[24px] p-6">
+        <CardInset key={index} className="p-5">
           <div className="mb-4 h-4 w-24 animate-pulse rounded bg-muted" />
           <div className="mb-3 h-6 w-2/3 animate-pulse rounded bg-muted" />
           <div className="mb-2 h-4 w-full animate-pulse rounded bg-muted" />
@@ -21,10 +23,10 @@ function DashboardProjectsSkeleton() {
             <div className="h-9 w-24 animate-pulse rounded bg-muted" />
             <div className="h-9 w-24 animate-pulse rounded bg-muted" />
           </div>
-        </div>
+        </CardInset>
       ))}
     </div>
-  )
+  );
 }
 
 function formatProjectDate(value: string) {
@@ -32,16 +34,13 @@ function formatProjectDate(value: string) {
     month: "short",
     day: "numeric",
     year: "numeric",
-  }).format(new Date(value))
+  }).format(new Date(value));
 }
 
 export default function DashboardPage() {
-  const { projects, isLoading, error } = useProjects()
+  const { projects, isLoading, error } = useProjects();
 
-  const activeProjects = useMemo(
-    () => projects.filter((project) => !project.archived),
-    [projects],
-  )
+  const activeProjects = useMemo(() => projects.filter((project) => !project.archived), [projects]);
 
   const stats = useMemo(
     () => [
@@ -75,14 +74,16 @@ export default function DashboardPage() {
       },
     ],
     [activeProjects.length, isLoading, projects.length],
-  )
+  );
 
-  const recentProjects = useMemo(() => projects.slice(0, 3), [projects])
+  const recentProjects = useMemo(() => projects.slice(0, 3), [projects]);
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-outer_space-500 dark:text-platinum-500">Dashboard</h1>
+        <h1 className="text-3xl font-bold text-outer_space-500 dark:text-platinum-500">
+          Dashboard
+        </h1>
         <p className="text-payne's_gray-500 dark:text-french_gray-500 mt-2">
           Welcome back! Here&apos;s an overview of your projects and tasks.
         </p>
@@ -93,9 +94,11 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <RecentProjects projects={recentProjects} isLoading={isLoading} />
 
-        <div className="glass-panel rounded-[28px] p-6">
-          <h3 className="text-lg font-semibold text-outer_space-500 dark:text-platinum-500 mb-4">Quick Actions</h3>
-          <div className="space-y-3">
+        <Card variant="panel">
+          <CardHeader className="p-6 pb-4">
+            <CardTitle>Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 pt-0">
             <Link
               href="/projects"
               className="w-full flex items-center justify-center rounded-2xl bg-primary px-4 py-3 text-white shadow-[0_12px_24px_rgba(109,93,252,0.25)] transition-colors hover:bg-primary/90"
@@ -103,27 +106,35 @@ export default function DashboardPage() {
               <Plus size={20} className="mr-2" />
               Create New Project
             </Link>
-            <Link
-              href="/team"
-              className="glass-card flex w-full items-center justify-center rounded-2xl px-4 py-3 text-outer_space-500 transition-colors hover:bg-white/75 dark:text-platinum-500"
-            >
-              <Plus size={20} className="mr-2" />
-              Add Team Member
+            <Link href="/team" className="block">
+              <CardInset
+                as="div"
+                interactive
+                className="flex items-center justify-center gap-2 px-4 py-3 text-center text-sm font-medium text-outer_space-500 dark:text-platinum-500"
+              >
+                <Plus size={20} />
+                Add Team Member
+              </CardInset>
             </Link>
-            <Link
-              href="/projects"
-              className="glass-card flex w-full items-center justify-center rounded-2xl px-4 py-3 text-outer_space-500 transition-colors hover:bg-white/75 dark:text-platinum-500"
-            >
-              <Plus size={20} className="mr-2" />
-              Create Task
+            <Link href="/projects" className="block">
+              <CardInset
+                as="div"
+                interactive
+                className="flex items-center justify-center gap-2 px-4 py-3 text-center text-sm font-medium text-outer_space-500 dark:text-platinum-500"
+              >
+                <Plus size={20} />
+                Create Task
+              </CardInset>
             </Link>
-          </div>
-          <div className="mt-4 rounded-2xl border border-amber-200/70 bg-amber-50/70 p-4 backdrop-blur-md dark:bg-yellow-900/20">
-            <p className="text-sm text-yellow-800 dark:text-yellow-200">
-              Project data is live. Team and task counts depend on later TODOs in the instructor files.
-            </p>
-          </div>
-        </div>
+            <CardInset
+              as="div"
+              className="border-amber-200/70 bg-amber-50/70 p-4 text-sm text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200"
+            >
+              Project data is live. Team and task counts depend on later TODOs in the instructor
+              files.
+            </CardInset>
+          </CardContent>
+        </Card>
       </div>
 
       <section className="space-y-4">
@@ -141,60 +152,51 @@ export default function DashboardPage() {
         {isLoading ? <DashboardProjectsSkeleton /> : null}
 
         {!isLoading && projects.length === 0 ? (
-          <div className="glass-card rounded-[28px] border-dashed px-6 py-12 text-center">
-            <h3 className="mt-4 text-xl font-semibold text-foreground">No projects yet</h3>
-            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-              Create your first project to start tracking work from the dashboard.
-            </p>
-            <Link
-              href="/projects"
-              className="mt-6 inline-flex items-center rounded-2xl bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"
-            >
-              <Plus className="mr-2" size={16} />
-              Create a project
-            </Link>
-          </div>
+          <Card variant="panel">
+            <CardContent className="p-6">
+              <CardInset as="div" className="border-dashed px-6 py-12 text-center">
+                <h3 className="text-xl font-semibold text-foreground">No projects yet</h3>
+                <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+                  Create your first project to start tracking work from the dashboard.
+                </p>
+                <Link
+                  href="/projects"
+                  className="mt-6 inline-flex items-center rounded-2xl bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"
+                >
+                  <Plus className="mr-2" size={16} />
+                  Create a project
+                </Link>
+              </CardInset>
+            </CardContent>
+          </Card>
         ) : null}
 
         {!isLoading && projects.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             {projects.map((project) => (
-              <Link
+              <ProjectCard
                 key={project.id}
                 href={`/projects/${project.id}`}
-                className="glass-card group rounded-[28px] p-6 transition-all hover:-translate-y-0.5 hover:bg-white/76 hover:shadow-[0_16px_36px_rgba(163,177,220,0.24)]"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`h-2.5 w-2.5 rounded-full ${project.archived ? "bg-muted-foreground/50" : "bg-primary"}`}
-                      />
-                      <span className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                        {project.archived ? "Archived" : "Active"}
-                      </span>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-foreground group-hover:text-primary">{project.name}</h3>
-                      <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
-                        {project.description ?? "No description added yet."}
-                      </p>
-                    </div>
+                project={{
+                  id: project.id,
+                  name: project.name,
+                  description: project.description,
+                  dueDate: project.dueDate,
+                  status: project.archived ? "archived" : "active",
+                  role: project.key ?? undefined,
+                }}
+                footer={
+                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    <span className="rounded-full bg-white/72 px-3 py-1 backdrop-blur-md">
+                      Created {formatProjectDate(project.createdAt)}
+                    </span>
                   </div>
-                </div>
-
-                <div className="mt-6 flex flex-wrap gap-3 text-sm text-muted-foreground">
-                  <span className="rounded-full bg-white/72 px-3 py-1 backdrop-blur-md">Created {formatProjectDate(project.createdAt)}</span>
-                  {project.key ? <span className="rounded-full bg-white/72 px-3 py-1 backdrop-blur-md">{project.key}</span> : null}
-                  {project.dueDate ? (
-                    <span className="rounded-full bg-white/72 px-3 py-1 backdrop-blur-md">Due {formatProjectDate(project.dueDate)}</span>
-                  ) : null}
-                </div>
-              </Link>
+                }
+              />
             ))}
           </div>
         ) : null}
       </section>
     </div>
-  )
+  );
 }

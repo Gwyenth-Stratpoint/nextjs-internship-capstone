@@ -4,14 +4,7 @@ import { drizzle } from "drizzle-orm/neon-http";
 import { and, asc, desc, eq } from "drizzle-orm";
 
 import * as schema from "./schema";
-import {
-  workspaceMembers,
-  projects,
-  projectMembers,
-  lists,
-  tasks,
-  comments,
-} from "./schema";
+import { workspaceMembers, projects, projectMembers, lists, tasks, comments } from "./schema";
 
 if (!process.env.DATABASE_URL) {
   throw new Error("Missing DATABASE_URL environment variable");
@@ -146,7 +139,12 @@ export const queries = {
         .orderBy(asc(lists.position));
     },
 
-    create: async (data: { projectId: string; name: string; position?: number; actingUserId: string }) => {
+    create: async (data: {
+      projectId: string;
+      name: string;
+      position?: number;
+      actingUserId: string;
+    }) => {
       await assertProjectMember(data.projectId, data.actingUserId);
       const [row] = await db
         .insert(lists)
@@ -163,7 +161,11 @@ export const queries = {
   tasks: {
     getByProject: async (projectId: string, actingUserId: string) => {
       await assertProjectMember(projectId, actingUserId);
-      return db.select().from(tasks).where(eq(tasks.projectId, projectId)).orderBy(asc(tasks.createdAt));
+      return db
+        .select()
+        .from(tasks)
+        .where(eq(tasks.projectId, projectId))
+        .orderBy(asc(tasks.createdAt));
     },
 
     create: async (data: {
@@ -209,10 +211,19 @@ export const queries = {
     getByTask: async (taskId: string, projectId: string, actingUserId: string) => {
       // you pass projectId in so we don't have to fetch task->project here
       await assertProjectMember(projectId, actingUserId);
-      return db.select().from(comments).where(eq(comments.taskId, taskId)).orderBy(asc(comments.createdAt));
+      return db
+        .select()
+        .from(comments)
+        .where(eq(comments.taskId, taskId))
+        .orderBy(asc(comments.createdAt));
     },
 
-    create: async (data: { taskId: string; authorId: string; content: string; projectId: string }) => {
+    create: async (data: {
+      taskId: string;
+      authorId: string;
+      content: string;
+      projectId: string;
+    }) => {
       await assertProjectMember(data.projectId, data.authorId);
       const [row] = await db
         .insert(comments)

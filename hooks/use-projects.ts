@@ -24,7 +24,7 @@ type ProjectFromApi = {
 
 type ApiSuccess<T> = {
   success: true;
-  data: T; 
+  data: T;
 };
 
 type ApiError = {
@@ -53,7 +53,21 @@ type UpdateProjectInput = Partial<{
   archived: boolean;
 }>;
 
-function normalizeProject(input: any): ProjectFromApi {
+type ProjectApiRecord = {
+  id: string;
+  workspaceId: string;
+  name: string;
+  key?: string | null;
+  description?: string | null;
+  dueDate?: string | Date | null;
+  createdById?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+  archived?: boolean | null;
+  role?: ProjectFromApi["role"] | null;
+};
+
+function normalizeProject(input: ProjectApiRecord): ProjectFromApi {
   return {
     id: input.id,
     workspaceId: input.workspaceId,
@@ -131,7 +145,9 @@ export function useProjects() {
       });
       const normalized = normalizeProject(updated);
       startTransition(() => {
-        setProjects((prev) => prev.map((project) => (project.id === projectId ? normalized : project)));
+        setProjects((prev) =>
+          prev.map((project) => (project.id === projectId ? normalized : project)),
+        );
       });
       return normalized;
     },
@@ -159,6 +175,15 @@ export function useProjects() {
       updateProject,
       deleteProject,
     }),
-    [projects, isLoading, error, isPending, fetchProjects, createProject, updateProject, deleteProject],
+    [
+      projects,
+      isLoading,
+      error,
+      isPending,
+      fetchProjects,
+      createProject,
+      updateProject,
+      deleteProject,
+    ],
   );
 }

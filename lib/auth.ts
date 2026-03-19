@@ -4,6 +4,26 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 
+type ClerkOrganizationMembership = {
+  role?: string | null;
+  publicUserData?: {
+    userId?: string | null;
+    user_id?: string | null;
+  };
+};
+
+function toOrganizationMemberships(value: unknown): ClerkOrganizationMembership[] {
+  if (Array.isArray(value)) {
+    return value as ClerkOrganizationMembership[];
+  }
+
+  if (value && typeof value === "object" && Array.isArray((value as { data?: unknown[] }).data)) {
+    return (value as { data: ClerkOrganizationMembership[] }).data;
+  }
+
+  return [];
+}
+
 export async function requireClerkUserId() {
   const { userId: clerkId } = await auth();
 
@@ -32,20 +52,18 @@ export async function requireActiveClerkOrgId() {
 export async function getActiveClerkOrgRole() {
   const clerkUserId = await requireClerkUserId();
   const clerkOrgId = await requireActiveClerkOrgId();
-  const client = (await clerkClient()) as any;
-  const membershipResult = await client.organizations.getOrganizationMembershipList({
+  const client = await clerkClient();
+  const membershipResult: unknown = await client.organizations.getOrganizationMembershipList({
     organizationId: clerkOrgId,
     limit: 100,
   });
 
-  const memberships = Array.isArray(membershipResult)
-    ? membershipResult
-    : Array.isArray(membershipResult?.data)
-      ? membershipResult.data
-      : [];
+  const memberships = toOrganizationMemberships(membershipResult);
 
-  const membership = memberships.find((entry: any) => {
-    return entry.publicUserData?.userId === clerkUserId || entry.publicUserData?.user_id === clerkUserId;
+  const membership = memberships.find((entry) => {
+    return (
+      entry.publicUserData?.userId === clerkUserId || entry.publicUserData?.user_id === clerkUserId
+    );
   });
 
   return (membership?.role as string | undefined) ?? null;
@@ -61,7 +79,8 @@ export async function requireDbUserId() {
   }
 
   const clerkUser = await currentUser();
-  const email = clerkUser?.primaryEmailAddress?.emailAddress ?? clerkUser?.emailAddresses?.[0]?.emailAddress;
+  const email =
+    clerkUser?.primaryEmailAddress?.emailAddress ?? clerkUser?.emailAddresses?.[0]?.emailAddress;
 
   if (!clerkUser || !email) {
     throw new Error("Unauthorized");

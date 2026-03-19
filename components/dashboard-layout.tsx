@@ -31,11 +31,7 @@ const navigation = [
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { theme, setTheme } = useTheme();
 
@@ -148,9 +144,7 @@ export default function DashboardLayout({
 
         {/* Page content */}
         <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-          <div className="min-h-[calc(100vh-7rem)] p-2 sm:p-4">
-            {children}
-          </div>
+          <div className="min-h-[calc(100vh-7rem)] p-2 sm:p-4">{children}</div>
         </main>
       </div>
     </div>

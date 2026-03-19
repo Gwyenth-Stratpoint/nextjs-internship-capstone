@@ -60,7 +60,13 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return Response.json(
-        { success: false, error: { code: "BAD_REQUEST", message: error.issues[0]?.message ?? "Invalid list payload" } },
+        {
+          success: false,
+          error: {
+            code: "BAD_REQUEST",
+            message: error.issues[0]?.message ?? "Invalid list payload",
+          },
+        },
         { status: 400 },
       );
     }

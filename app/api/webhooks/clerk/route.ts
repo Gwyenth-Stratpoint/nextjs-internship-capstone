@@ -37,9 +37,7 @@ export async function POST(req: Request) {
     if (type === "user.created" || type === "user.updated") {
       const clerkId = data.id;
 
-      const email =
-        data.email_addresses?.[0]?.email_address ??
-        ""; // you can enforce required if you want
+      const email = data.email_addresses?.[0]?.email_address ?? ""; // you can enforce required if you want
 
       const name = [data.first_name, data.last_name].filter(Boolean).join(" ") || null;
       const avatarUrl = data.image_url ?? null;
@@ -63,14 +61,13 @@ export async function POST(req: Request) {
     }
 
     if (type === "user.deleted") {
-      
     }
 
     if (type === "organization.created" || type === "organization.updated") {
       await syncWorkspaceFromClerkOrganization({
         id: data.id,
         name: data.name,
-        slug: "slug" in data ? data.slug ?? null : null,
+        slug: "slug" in data ? (data.slug ?? null) : null,
       });
     }
 

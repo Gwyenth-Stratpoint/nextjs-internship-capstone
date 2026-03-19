@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import { useTheme } from "./theme-provider"
-import { Moon, Sun } from "lucide-react"
-import Link from "next/link"
+import { useTheme } from "./theme-provider";
+import { Moon, Sun } from "lucide-react";
+import Link from "next/link";
 
 export function Header() {
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme } = useTheme();
 
   return (
     <header className="border-b border-border bg-card/80 backdrop-blur-sm">
@@ -18,22 +18,13 @@ export function Header() {
           </div>
 
           <nav className="hidden md:flex space-x-8">
-            <Link
-              href="#features"
-              className="text-foreground hover:text-primary transition-colors"
-            >
+            <Link href="#features" className="text-foreground hover:text-primary transition-colors">
               Features
             </Link>
-            <Link
-              href="#pricing"
-              className="text-foreground hover:text-primary transition-colors"
-            >
+            <Link href="#pricing" className="text-foreground hover:text-primary transition-colors">
               Pricing
             </Link>
-            <Link
-              href="#about"
-              className="text-foreground hover:text-primary transition-colors"
-            >
+            <Link href="#about" className="text-foreground hover:text-primary transition-colors">
               About
             </Link>
           </nav>
@@ -56,6 +47,5 @@ export function Header() {
         </div>
       </div>
     </header>
-  )
+  );
 }
-

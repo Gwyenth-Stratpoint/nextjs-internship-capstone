@@ -73,6 +73,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 Since each intern works on their own fork, you have complete control over your repository:
 
 1. **Create feature branches** for major features:
+
    ```bash
    git checkout -b feature/authentication
    git checkout -b feature/kanban-board
@@ -80,12 +81,14 @@ Since each intern works on their own fork, you have complete control over your r
    ```
 
 2. **Make your changes** and commit regularly:
+
    ```bash
    git add .
    git commit -m "feat: add task creation modal"
    ```
 
 3. **Push your branch**:
+
    ```bash
    git push origin feature/authentication
    ```
@@ -104,6 +107,7 @@ Since each intern works on their own fork, you have complete control over your r
 - `docs/[documentation-update]`
 
 Examples:
+
 - `feature/add-task-modal`
 - `fix/drag-drop-bug`
 - `docs/update-setup-guide`
@@ -215,11 +219,13 @@ project/                   # Your project directory
 ### Common Issues
 
 1. **Port already in use**:
+
    ```bash
    lsof -ti:3000 | xargs kill -9
    ```
 
 2. **Node modules issues**:
+
    ```bash
    rm -rf node_modules pnpm-lock.yaml
    pnpm install

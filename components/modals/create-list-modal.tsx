@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { Columns3, Sparkles } from "lucide-react"
+import { useState } from "react";
+import { Columns3, Sparkles } from "lucide-react";
 
 import {
   CenteredModalSurface,
@@ -10,22 +10,22 @@ import {
   ModalFooter,
   ModalHeader,
   ModalInputShell,
-} from "@/components/modals/modal-primitives"
+} from "@/components/modals/modal-primitives";
 
 type ListDraft = {
-  name: string
-}
+  name: string;
+};
 
 type CreateListModalProps = {
-  isOpen: boolean
-  isSubmitting?: boolean
-  onClose: () => void
-  onSubmit: (input: ListDraft) => Promise<void>
-}
+  isOpen: boolean;
+  isSubmitting?: boolean;
+  onClose: () => void;
+  onSubmit: (input: ListDraft) => Promise<void>;
+};
 
 const emptyList: ListDraft = {
   name: "",
-}
+};
 
 export function CreateListModal({
   isOpen,
@@ -33,40 +33,33 @@ export function CreateListModal({
   onClose,
   onSubmit,
 }: CreateListModalProps) {
-  const [form, setForm] = useState<ListDraft>(emptyList)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!isOpen) return
-
-    setForm(emptyList)
-    setError(null)
-  }, [isOpen])
+  const [form, setForm] = useState<ListDraft>(emptyList);
+  const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) {
-    return null
+    return null;
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+    event.preventDefault();
 
     if (isSubmitting) {
-      return
+      return;
     }
 
     if (!form.name.trim()) {
-      setError("List name is required")
-      return
+      setError("List name is required");
+      return;
     }
 
     try {
-      setError(null)
+      setError(null);
       await onSubmit({
         name: form.name.trim(),
-      })
-      onClose()
+      });
+      onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create list")
+      setError(err instanceof Error ? err.message : "Failed to create list");
     }
   }
 
@@ -91,7 +84,9 @@ export function CreateListModal({
               <input
                 autoFocus
                 value={form.name}
-                onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, name: event.target.value }))
+                }
                 className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3.5 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 placeholder="Review"
               />
@@ -113,5 +108,5 @@ export function CreateListModal({
         </form>
       </CenteredModalSurface>
     </ModalBackdrop>
-  )
+  );
 }

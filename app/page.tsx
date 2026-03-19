@@ -1,6 +1,6 @@
-import Link from "next/link"
-import { ArrowRight, CheckCircle, Users, Kanban } from "lucide-react"
-import { ThemeToggle } from "@/components/theme-toggle"
+import Link from "next/link";
+import { ArrowRight, CheckCircle, Users, Kanban } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const roadmap = [
   { phase: "1.0", title: "Project Setup", status: "pending", tasks: 6 },
@@ -11,7 +11,7 @@ const roadmap = [
   { phase: "6.0", title: "Advanced Features", status: "pending", tasks: 6 },
   { phase: "7.0", title: "Testing", status: "pending", tasks: 6 },
   { phase: "8.0", title: "Deployment", status: "pending", tasks: 6 },
-]
+];
 
 export default function HomePage() {
   return (
@@ -58,8 +58,8 @@ export default function HomePage() {
           </h1>
 
           <p className="mx-auto mb-8 max-w-2xl text-xl text-muted-foreground">
-            Organize tasks, collaborate with teams, and track progress with our intuitive drag-and-drop project
-            management platform.
+            Organize tasks, collaborate with teams, and track progress with our intuitive
+            drag-and-drop project management platform.
           </p>
 
           <div className="mb-12 flex flex-col justify-center gap-4 sm:flex-row">
@@ -103,22 +103,34 @@ export default function HomePage() {
           </p>
 
           <div className="mx-auto grid max-w-4xl grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Link href="/dashboard" className="glass-card rounded-3xl p-4 text-left transition hover:shadow-lg">
+            <Link
+              href="/dashboard"
+              className="glass-card rounded-3xl p-4 text-left transition hover:shadow-lg"
+            >
               <h3 className="mb-2 font-semibold text-foreground">Dashboard</h3>
               <p className="text-sm text-muted-foreground">Main dashboard view</p>
             </Link>
 
-            <Link href="/projects" className="glass-card rounded-3xl p-4 text-left transition hover:shadow-lg">
+            <Link
+              href="/projects"
+              className="glass-card rounded-3xl p-4 text-left transition hover:shadow-lg"
+            >
               <h3 className="mb-2 font-semibold text-foreground">Projects</h3>
               <p className="text-sm text-muted-foreground">Projects listing page</p>
             </Link>
 
-            <Link href="/projects/1" className="glass-card rounded-3xl p-4 text-left transition hover:shadow-lg">
+            <Link
+              href="/projects/1"
+              className="glass-card rounded-3xl p-4 text-left transition hover:shadow-lg"
+            >
               <h3 className="mb-2 font-semibold text-foreground">Kanban Board</h3>
               <p className="text-sm text-muted-foreground">Project board view</p>
             </Link>
 
-            <Link href="/sign-in" className="glass-card rounded-3xl p-4 text-left transition hover:shadow-lg">
+            <Link
+              href="/sign-in"
+              className="glass-card rounded-3xl p-4 text-left transition hover:shadow-lg"
+            >
               <h3 className="mb-2 font-semibold text-foreground">Auth Pages</h3>
               <p className="text-sm text-muted-foreground">Sign in/up placeholders</p>
             </Link>
@@ -128,7 +140,9 @@ export default function HomePage() {
 
       <section className="relative z-10 px-4 py-16 sm:px-6 lg:px-8">
         <div className="container mx-auto">
-          <h2 className="mb-12 text-center text-3xl font-bold text-foreground">Implementation Roadmap</h2>
+          <h2 className="mb-12 text-center text-3xl font-bold text-foreground">
+            Implementation Roadmap
+          </h2>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
             {roadmap.map((item) => (
@@ -146,5 +160,5 @@ export default function HomePage() {
         </div>
       </section>
     </div>
-  )
+  );
 }

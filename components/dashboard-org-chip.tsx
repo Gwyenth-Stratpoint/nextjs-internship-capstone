@@ -16,9 +16,11 @@ export function DashboardOrgChip() {
         <Building2 size={16} />
       </span>
       <span className="min-w-0">
-        <span className="block text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Workspace</span>
+        <span className="block text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+          Workspace
+        </span>
         <span className="block max-w-[11rem] truncate font-medium text-foreground">
-          {isLoaded ? organization?.name ?? "Select workspace" : "Loading workspace"}
+          {isLoaded ? (organization?.name ?? "Select workspace") : "Loading workspace"}
         </span>
       </span>
       <ChevronsUpDown size={16} className="text-muted-foreground" />

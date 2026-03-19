@@ -47,7 +47,18 @@ type ReorderListsInput = {
   orderedListIds: string[];
 };
 
-function normalizeList(input: any): ListFromApi {
+type ListApiRecord = {
+  id: string;
+  projectId: string;
+  name: string;
+  position?: number | string | null;
+  category?: ListFromApi["category"] | null;
+  archived?: boolean | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+};
+
+function normalizeList(input: ListApiRecord): ListFromApi {
   return {
     id: input.id,
     projectId: input.projectId,
@@ -279,6 +290,16 @@ export function useLists(projectId: string) {
       deleteList,
       reorderLists,
     }),
-    [lists, isLoading, error, isPending, fetchLists, createList, updateList, deleteList, reorderLists],
+    [
+      lists,
+      isLoading,
+      error,
+      isPending,
+      fetchLists,
+      createList,
+      updateList,
+      deleteList,
+      reorderLists,
+    ],
   );
 }
