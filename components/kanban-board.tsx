@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CreateListModal } from "@/components/modals/create-list-modal";
 import { CreateTaskModal } from "@/components/modals/create-task-modal";
+import { DeleteListModal } from "@/components/modals/delete-list-modal";
 import { TaskCard } from "@/components/task-card";
 import { CardInset } from "@/components/ui/card";
 import { useLists } from "@/hooks/use-lists";
@@ -32,6 +33,14 @@ type ModalState =
       };
     }
   | null;
+
+type DeleteListState = {
+  listId: string;
+  listName: string;
+  taskCount: number;
+  destinationListId: string;
+  error: string | null;
+} | null;
 
 type ListActionsProps = {
   onRename?: () => void;
@@ -215,12 +224,14 @@ export function KanbanBoard({
     createTask,
     updateTask,
     deleteTask,
+    refetchTasks,
     isMutating: isTasksMutating,
   } = useTasks(projectId);
 
   // Modal state for creating or editing a task.
   const [modalState, setModalState] = useState<ModalState>(null);
   const [isCreateListOpen, setIsCreateListOpen] = useState(false);
+  const [deleteListState, setDeleteListState] = useState<DeleteListState>(null);
   const [dragState, setDragState] = useState<{
     taskId: string;
     overListId: string | null;
@@ -392,16 +403,50 @@ export function KanbanBoard({
     }
   }
 
-  async function handleDeleteList(listId: string, name: string) {
-    const confirmed = window.confirm(
-      `Delete "${name}"? Tasks in this list will be detached from the column.`,
-    );
-    if (!confirmed) return;
+  function openDeleteListModal(listId: string, name: string) {
+    const taskCount = tasksByList.get(listId)?.length ?? 0;
+    const fallbackDestinationId =
+      activeLists.find((list) => list.id !== listId && !list.archived)?.id ?? "";
+
+    setDeleteListState({
+      listId,
+      listName: name,
+      taskCount,
+      destinationListId: taskCount > 0 ? fallbackDestinationId : "",
+      error: null,
+    });
+  }
+
+  async function handleDeleteList() {
+    if (!deleteListState) return;
+
+    if (deleteListState.taskCount > 0 && !deleteListState.destinationListId) {
+      setDeleteListState((current) =>
+        current
+          ? {
+              ...current,
+              error: "Choose a destination column before deleting this one.",
+            }
+          : current,
+      );
+      return;
+    }
 
     try {
-      await deleteList(listId);
+      await deleteList(deleteListState.listId, {
+        moveTasksToListId: deleteListState.destinationListId || null,
+      });
+      await refetchTasks();
+      setDeleteListState(null);
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "Failed to delete list");
+      setDeleteListState((current) =>
+        current
+          ? {
+              ...current,
+              error: err instanceof Error ? err.message : "Failed to delete list",
+            }
+          : current,
+      );
     }
   }
 
@@ -580,7 +625,7 @@ export function KanbanBoard({
                 ? () => void handleRenameList(list.id, list.name)
                 : undefined;
               const onDeleteList = canManageLists
-                ? () => void handleDeleteList(list.id, list.name)
+                ? () => openDeleteListModal(list.id, list.name)
                 : undefined;
               const onRenameCategory = canManageLists
                 ? () => void handleCategoryUpdate(list.id, list.category)
@@ -746,6 +791,31 @@ export function KanbanBoard({
         isSubmitting={isListsMutating}
         onClose={() => setIsCreateListOpen(false)}
         onSubmit={handleCreateList}
+      />
+
+      <DeleteListModal
+        isOpen={deleteListState !== null}
+        listName={deleteListState?.listName ?? ""}
+        taskCount={deleteListState?.taskCount ?? 0}
+        destinationListId={deleteListState?.destinationListId ?? ""}
+        destinationOptions={activeLists
+          .filter((list) => list.id !== deleteListState?.listId)
+          .map((list) => ({ id: list.id, name: list.name }))}
+        isSubmitting={isListsMutating}
+        error={deleteListState?.error ?? null}
+        onDestinationChange={(value) =>
+          setDeleteListState((current) =>
+            current
+              ? {
+                  ...current,
+                  destinationListId: value,
+                  error: null,
+                }
+              : current,
+          )
+        }
+        onClose={() => setDeleteListState(null)}
+        onSubmit={() => void handleDeleteList()}
       />
     </div>
   );

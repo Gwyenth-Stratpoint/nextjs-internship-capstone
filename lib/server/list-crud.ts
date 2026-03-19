@@ -1,7 +1,7 @@
-import { asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { lists } from "@/lib/db/schema";
+import { activity, lists, projects, tasks } from "@/lib/db/schema";
 import { assertProjectRole, getProjectMembership } from "@/lib/server/project-permissions";
 
 type CreateListInput = {
@@ -21,6 +21,10 @@ type UpdateListInput = Partial<{
 type ReorderListsInput = {
   projectId: string;
   orderedListIds: string[];
+};
+
+type DeleteListInput = {
+  moveTasksToListId?: string | null;
 };
 
 export type ProjectTemplate = "simple" | "software";
@@ -81,6 +85,17 @@ const PROJECT_TEMPLATE_LISTS: Record<
 
 function clampPosition(position: number, max: number) {
   return Math.max(0, Math.min(position, max));
+}
+
+function mapListCategoryToTaskStatus(category: "todo" | "in_progress" | "done") {
+  switch (category) {
+    case "todo":
+      return "open" as const;
+    case "done":
+      return "done" as const;
+    default:
+      return "in_progress" as const;
+  }
 }
 
 async function getProjectListRows(projectId: string) {
@@ -162,6 +177,7 @@ async function getAccessibleList(listId: string, userId: string) {
     .select({
       id: lists.id,
       projectId: lists.projectId,
+      workspaceId: projects.workspaceId,
       name: lists.name,
       position: lists.position,
       category: lists.category,
@@ -170,6 +186,7 @@ async function getAccessibleList(listId: string, userId: string) {
       updatedAt: lists.updatedAt,
     })
     .from(lists)
+    .innerJoin(projects, eq(lists.projectId, projects.id))
     .where(eq(lists.id, listId))
     .limit(1);
 
@@ -298,7 +315,11 @@ export async function updateProjectList(listId: string, userId: string, input: U
   return normalizedList;
 }
 
-export async function deleteProjectList(listId: string, userId: string) {
+export async function deleteProjectList(
+  listId: string,
+  userId: string,
+  input: DeleteListInput = {},
+) {
   const existingList = await getAccessibleList(listId, userId);
   await assertProjectRole(existingList.projectId, userId, ["owner", "admin"]);
 
@@ -310,6 +331,90 @@ export async function deleteProjectList(listId: string, userId: string) {
     );
   }
 
+  const listTasks = await db
+    .select({
+      id: tasks.id,
+      position: tasks.position,
+    })
+    .from(tasks)
+    .where(and(eq(tasks.projectId, existingList.projectId), eq(tasks.listId, listId)))
+    .orderBy(asc(tasks.position), asc(tasks.createdAt));
+
+  let movedTaskCount = 0;
+  let destinationListName: string | null = null;
+
+  if (listTasks.length > 0) {
+    if (!input.moveTasksToListId) {
+      throw new Error("MoveTargetRequired");
+    }
+
+    if (input.moveTasksToListId === listId) {
+      throw new Error("InvalidMoveTarget");
+    }
+
+    const [destinationList] = await db
+      .select({
+        id: lists.id,
+        name: lists.name,
+        category: lists.category,
+        projectId: lists.projectId,
+        archived: lists.archived,
+      })
+      .from(lists)
+      .where(eq(lists.id, input.moveTasksToListId))
+      .limit(1);
+
+    if (
+      !destinationList ||
+      destinationList.projectId !== existingList.projectId ||
+      destinationList.archived
+    ) {
+      throw new Error("InvalidMoveTarget");
+    }
+
+    const destinationTasks = await db
+      .select({
+        id: tasks.id,
+      })
+      .from(tasks)
+      .where(and(eq(tasks.projectId, existingList.projectId), eq(tasks.listId, destinationList.id)))
+      .orderBy(asc(tasks.position), asc(tasks.createdAt));
+
+    const destinationStatus = mapListCategoryToTaskStatus(destinationList.category);
+
+    for (const [offset, task] of listTasks.entries()) {
+      await db
+        .update(tasks)
+        .set({
+          listId: destinationList.id,
+          position: destinationTasks.length + offset,
+          status: destinationStatus,
+          updatedAt: new Date(),
+        })
+        .where(eq(tasks.id, task.id));
+    }
+
+    await db.insert(activity).values(
+      listTasks.map((task) => ({
+        workspaceId: existingList.workspaceId,
+        projectId: existingList.projectId,
+        taskId: task.id,
+        actorId: userId,
+        action: "moved" as const,
+        meta: {
+          sourceListId: existingList.id,
+          sourceListName: existingList.name,
+          destinationListId: destinationList.id,
+          destinationListName: destinationList.name,
+          reason: "list_deleted",
+        },
+      })),
+    );
+
+    movedTaskCount = listTasks.length;
+    destinationListName = destinationList.name;
+  }
+
   const [deletedList] = await db.delete(lists).where(eq(lists.id, listId)).returning();
 
   if (!deletedList) {
@@ -317,6 +422,21 @@ export async function deleteProjectList(listId: string, userId: string) {
   }
 
   await persistListOrder(existingList.projectId);
+
+  await db.insert(activity).values({
+    workspaceId: existingList.workspaceId,
+    projectId: existingList.projectId,
+    actorId: userId,
+    action: "updated",
+    meta: {
+      entityType: "list",
+      event: "deleted",
+      listId: existingList.id,
+      listName: existingList.name,
+      movedTaskCount,
+      destinationListName,
+    },
+  });
 
   return deletedList;
 }

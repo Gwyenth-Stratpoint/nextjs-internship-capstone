@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { requireDbUserId } from "@/lib/auth";
-import { listUpdateSchema } from "@/lib/validations";
+import { listDeleteSchema, listUpdateSchema } from "@/lib/validations";
 import { deleteProjectList, updateProjectList } from "@/lib/server/list-crud";
 
 const paramsSchema = z.object({
@@ -77,11 +77,13 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 }
 
-export async function DELETE(_request: Request, context: RouteContext) {
+export async function DELETE(request: Request, context: RouteContext) {
   try {
     const userId = await requireDbUserId();
     const { id } = paramsSchema.parse(await context.params);
-    const data = await deleteProjectList(id, userId);
+    const json = await request.json().catch(() => ({}));
+    const payload = listDeleteSchema.parse(json);
+    const data = await deleteProjectList(id, userId, payload);
     return Response.json({ success: true, data }, { status: 200 });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -115,10 +117,23 @@ export async function DELETE(_request: Request, context: RouteContext) {
     if (
       error instanceof Error &&
       (error.message === "The project must keep one start list" ||
-        error.message === "The project must keep one end list")
+        error.message === "The project must keep one end list" ||
+        error.message === "MoveTargetRequired" ||
+        error.message === "InvalidMoveTarget")
     ) {
       return Response.json(
-        { success: false, error: { code: "BAD_REQUEST", message: error.message } },
+        {
+          success: false,
+          error: {
+            code: "BAD_REQUEST",
+            message:
+              error.message === "MoveTargetRequired"
+                ? "Select a destination column before deleting this list."
+                : error.message === "InvalidMoveTarget"
+                  ? "Choose a valid destination column for these tasks."
+                  : error.message,
+          },
+        },
         { status: 400 },
       );
     }

@@ -211,7 +211,7 @@ export function useLists(projectId: string) {
   );
 
   const deleteList = useCallback(
-    async (listId: string) => {
+    async (listId: string, options?: { moveTasksToListId?: string | null }) => {
       const previousLists = lists;
 
       startTransition(() => {
@@ -219,7 +219,13 @@ export function useLists(projectId: string) {
       });
 
       try {
-        const response = await fetch(`/api/lists/${listId}`, { method: "DELETE" });
+        const response = await fetch(`/api/lists/${listId}`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            moveTasksToListId: options?.moveTasksToListId ?? null,
+          }),
+        });
         await parseApiResponse<ListFromApi>(response);
         await fetchLists();
       } catch (err) {

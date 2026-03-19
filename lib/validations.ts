@@ -83,6 +83,10 @@ export const listReorderSchema = z.object({
   orderedListIds: z.array(uuid).min(1, "At least one list id is required"),
 });
 
+export const listDeleteSchema = z.object({
+  moveTasksToListId: uuid.nullable().optional(),
+});
+
 export const taskSchema = z.object({
   projectId: uuid,
   listId: uuid.nullable().optional(),
