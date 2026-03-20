@@ -1,71 +1,153 @@
-// TODO: Task 5.3 - Set up client-side state management with Zustand
-// TODO: Task 5.4 - Implement optimistic UI updates for smooth interactions
+import { create } from "zustand";
 
-/*
-TODO: Implementation Notes for Interns:
+type TaskStatus = "open" | "in_progress" | "blocked" | "done";
+type TaskPriority = "none" | "low" | "medium" | "high" | "urgent";
 
-Board state management for Kanban functionality:
-- Current project data
-- Lists/columns
-- Tasks
-- Drag and drop state
-- Optimistic updates
-- Sync with server
+type TaskModalState =
+  | { mode: "create"; listId: string; listName: string }
+  | {
+      mode: "edit";
+      listId: string;
+      listName: string;
+      task: {
+        id: string;
+        title: string;
+        description?: string | null;
+        status: TaskStatus;
+        priority: TaskPriority;
+        assigneeId?: string | null;
+        dueDate?: string | null;
+        labels?: string[];
+      };
+    }
+  | null;
 
-Key features:
-- Optimistic task creation/updates
-- Drag and drop state management
-- Real-time synchronization
-- Conflict resolution
-- Offline support (optional)
+type DeleteListState = {
+  listId: string;
+  listName: string;
+  taskCount: number;
+  destinationListId: string;
+  error: string | null;
+} | null;
 
-Example structure:
-import { create } from 'zustand'
-import { subscribeWithSelector } from 'zustand/middleware'
+type EditListState = {
+  listId: string;
+  listName: string;
+  category: "todo" | "in_progress" | "done";
+} | null;
 
-interface BoardState {
-  // Data
-  currentProject: Project | null
-  lists: List[]
-  tasks: Task[]
-  
-  // UI state
-  draggedTask: Task | null
-  draggedOverList: string | null
-  
-  // Loading states
-  isLoading: boolean
-  isSaving: boolean
-  
-  // Actions
-  loadProject: (projectId: string) => Promise<void>
-  createTask: (listId: string, task: Partial<Task>) => Promise<void>
-  updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>
-  moveTask: (taskId: string, newListId: string, newPosition: number) => Promise<void>
-  deleteTask: (taskId: string) => Promise<void>
-  
-  // Drag and drop
-  setDraggedTask: (task: Task | null) => void
-  setDraggedOverList: (listId: string | null) => void
-}
+type DragState = {
+  taskId: string;
+  overListId: string | null;
+  overTaskId: string | null;
+} | null;
 
-export const useBoardStore = create<BoardState>()(
-  subscribeWithSelector((set, get) => ({
-    // ... implementation
-  }))
-)
-*/
-
-// Placeholder to prevent import errors
-export const useBoardStore = () => {
-  console.log("TODO: Implement board store with Zustand");
-  return {
-    currentProject: null,
-    lists: [],
-    tasks: [],
-    isLoading: false,
-    loadProject: (projectId: string) => console.log(`TODO: Load project ${projectId}`),
-    createTask: (listId: string, task: unknown) =>
-      console.log(`TODO: Create task in list ${listId}`, task),
-  };
+type BoardState = {
+  currentProjectId: string | null;
+  taskModalState: TaskModalState;
+  isCreateListOpen: boolean;
+  deleteListState: DeleteListState;
+  editListState: EditListState;
+  dragState: DragState;
+  setProjectScope: (projectId: string) => void;
+  resetBoardUi: () => void;
+  openCreateTaskModal: (listId: string, listName: string) => void;
+  openEditTaskModal: (input: Exclude<TaskModalState, { mode: "create" } | null>) => void;
+  closeTaskModal: () => void;
+  openCreateListModal: () => void;
+  closeCreateListModal: () => void;
+  openDeleteListModal: (input: NonNullable<DeleteListState>) => void;
+  setDeleteDestination: (destinationListId: string) => void;
+  setDeleteError: (error: string | null) => void;
+  closeDeleteListModal: () => void;
+  openEditListModal: (input: NonNullable<EditListState>) => void;
+  closeEditListModal: () => void;
+  startDrag: (taskId: string) => void;
+  updateDragTarget: (overListId: string | null, overTaskId?: string | null) => void;
+  clearDrag: () => void;
 };
+
+const initialBoardUiState = {
+  taskModalState: null as TaskModalState,
+  isCreateListOpen: false,
+  deleteListState: null as DeleteListState,
+  editListState: null as EditListState,
+  dragState: null as DragState,
+};
+
+export const useBoardStore = create<BoardState>((set, get) => ({
+  currentProjectId: null,
+  ...initialBoardUiState,
+  setProjectScope: (projectId) => {
+    if (get().currentProjectId === projectId) {
+      return;
+    }
+
+    set({
+      currentProjectId: projectId,
+      ...initialBoardUiState,
+    });
+  },
+  resetBoardUi: () => set(initialBoardUiState),
+  openCreateTaskModal: (listId, listName) =>
+    set({
+      taskModalState: {
+        mode: "create",
+        listId,
+        listName,
+      },
+    }),
+  openEditTaskModal: (input) => set({ taskModalState: input }),
+  closeTaskModal: () => set({ taskModalState: null }),
+  openCreateListModal: () => set({ isCreateListOpen: true }),
+  closeCreateListModal: () => set({ isCreateListOpen: false }),
+  openDeleteListModal: (input) => set({ deleteListState: input }),
+  setDeleteDestination: (destinationListId) =>
+    set((state) => ({
+      deleteListState: state.deleteListState
+        ? {
+            ...state.deleteListState,
+            destinationListId,
+            error: null,
+          }
+        : null,
+    })),
+  setDeleteError: (error) =>
+    set((state) => ({
+      deleteListState: state.deleteListState
+        ? {
+            ...state.deleteListState,
+            error,
+          }
+        : null,
+    })),
+  closeDeleteListModal: () => set({ deleteListState: null }),
+  openEditListModal: (input) => set({ editListState: input }),
+  closeEditListModal: () => set({ editListState: null }),
+  startDrag: (taskId) =>
+    set({
+      dragState: {
+        taskId,
+        overListId: null,
+        overTaskId: null,
+      },
+    }),
+  updateDragTarget: (overListId, overTaskId = null) =>
+    set((state) => {
+      if (
+        !state.dragState ||
+        (state.dragState.overListId === overListId && state.dragState.overTaskId === overTaskId)
+      ) {
+        return state;
+      }
+
+      return {
+        dragState: {
+          ...state.dragState,
+          overListId,
+          overTaskId,
+        },
+      };
+    }),
+  clearDrag: () => set({ dragState: null }),
+}));

@@ -2,7 +2,6 @@
 
 import type React from "react";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useTheme } from "./theme-provider";
 import {
@@ -21,6 +20,7 @@ import {
 } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
 import { DashboardOrgChip } from "@/components/dashboard-org-chip";
+import { useUIStore } from "@/stores/ui-store";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
@@ -32,8 +32,10 @@ const navigation = [
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { theme, setTheme } = useTheme();
+  const sidebarOpen = useUIStore((state) => state.sidebarOpen);
+  const openSidebar = useUIStore((state) => state.openSidebar);
+  const closeSidebar = useUIStore((state) => state.closeSidebar);
 
   return (
     <div className="glass-page relative min-h-screen overflow-hidden">
@@ -48,7 +50,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-slate-950/20 backdrop-blur-sm lg:hidden"
-          onClick={() => setSidebarOpen(false)}
+          onClick={closeSidebar}
         />
       )}
 
@@ -63,7 +65,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             Kilos
           </Link>
           <button
-            onClick={() => setSidebarOpen(false)}
+            onClick={closeSidebar}
             className="glass-card lg:hidden p-2 rounded-xl text-foreground/80 hover:bg-white/80"
             aria-label="Close sidebar"
           >
@@ -94,7 +96,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="sticky top-0 z-30 px-4 pt-3 sm:px-6 lg:px-8">
           <div className="glass-shell flex h-16 items-center gap-x-4 rounded-[24px] px-4 sm:gap-x-6 sm:px-6">
             <button
-              onClick={() => setSidebarOpen(true)}
+              onClick={openSidebar}
               className="glass-card lg:hidden p-2 rounded-xl hover:bg-white/80"
               aria-label="Open sidebar"
             >

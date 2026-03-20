@@ -11,6 +11,7 @@ import { TaskCard } from "@/components/task-card";
 import { CardInset } from "@/components/ui/card";
 import { useLists } from "@/hooks/use-lists";
 import { useTasks } from "@/hooks/use-tasks";
+import { useBoardStore } from "@/stores/board-store";
 
 type TaskStatus = "open" | "in_progress" | "blocked" | "done";
 type TaskPriority = "none" | "low" | "medium" | "high" | "urgent";
@@ -235,20 +236,30 @@ export function KanbanBoard({
     isMutating: isTasksMutating,
   } = useTasks(projectId);
 
-  // Modal state for creating or editing a task.
-  const [modalState, setModalState] = useState<ModalState>(null);
-  const [isCreateListOpen, setIsCreateListOpen] = useState(false);
-  const [deleteListState, setDeleteListState] = useState<DeleteListState>(null);
-  const [editListState, setEditListState] = useState<EditListState>(null);
-  const [dragState, setDragState] = useState<{
-    taskId: string;
-    overListId: string | null;
-    overTaskId: string | null;
-  } | null>(null);
+  const modalState = useBoardStore((state) => state.taskModalState as ModalState);
+  const isCreateListOpen = useBoardStore((state) => state.isCreateListOpen);
+  const deleteListState = useBoardStore((state) => state.deleteListState as DeleteListState);
+  const editListState = useBoardStore((state) => state.editListState as EditListState);
+  const dragState = useBoardStore((state) => state.dragState);
+  const setProjectScope = useBoardStore((state) => state.setProjectScope);
+  const openCreateTaskModal = useBoardStore((state) => state.openCreateTaskModal);
+  const openEditTaskModal = useBoardStore((state) => state.openEditTaskModal);
+  const closeTaskModal = useBoardStore((state) => state.closeTaskModal);
+  const openCreateListModal = useBoardStore((state) => state.openCreateListModal);
+  const closeCreateListModal = useBoardStore((state) => state.closeCreateListModal);
+  const openDeleteListStoreModal = useBoardStore((state) => state.openDeleteListModal);
+  const setDeleteDestination = useBoardStore((state) => state.setDeleteDestination);
+  const setDeleteError = useBoardStore((state) => state.setDeleteError);
+  const closeDeleteListModal = useBoardStore((state) => state.closeDeleteListModal);
+  const openEditListStoreModal = useBoardStore((state) => state.openEditListModal);
+  const closeEditListModal = useBoardStore((state) => state.closeEditListModal);
+  const startDrag = useBoardStore((state) => state.startDrag);
+  const updateDragTarget = useBoardStore((state) => state.updateDragTarget);
+  const clearDrag = useBoardStore((state) => state.clearDrag);
 
-  const openCreateListModal = useCallback(() => {
-    setIsCreateListOpen(true);
-  }, []);
+  useEffect(() => {
+    setProjectScope(projectId);
+  }, [projectId, setProjectScope]);
 
   const activeLists = useMemo(
     () => lists.filter((list) => !list.archived).sort((a, b) => a.position - b.position),
@@ -317,29 +328,15 @@ export function KanbanBoard({
   }
 
   function handleTaskDragStart(taskId: string) {
-    setDragState({
-      taskId,
-      overListId: null,
-      overTaskId: null,
-    });
+    startDrag(taskId);
   }
 
   function handleTaskDragEnd() {
-    setDragState(null);
+    clearDrag();
   }
 
   function handleTaskDragOver(listId: string, overTaskId: string | null = null) {
-    setDragState((current) => {
-      if (!current || (current.overListId === listId && current.overTaskId === overTaskId)) {
-        return current;
-      }
-
-      return {
-        ...current,
-        overListId: listId,
-        overTaskId,
-      };
-    });
+    updateDragTarget(listId, overTaskId);
   }
 
   async function handleTaskDrop(listId: string, overTaskId: string | null = null) {
@@ -349,7 +346,7 @@ export function KanbanBoard({
     const destinationList = activeLists.find((list) => list.id === listId);
 
     if (!draggedTask || !destinationList) {
-      setDragState(null);
+      clearDrag();
       return;
     }
 
@@ -388,7 +385,7 @@ export function KanbanBoard({
     } catch (err) {
       window.alert(err instanceof Error ? err.message : "Failed to move task");
     } finally {
-      setDragState(null);
+      clearDrag();
     }
   }
 
@@ -405,7 +402,7 @@ export function KanbanBoard({
     currentName: string,
     category: "todo" | "in_progress" | "done",
   ) {
-    setEditListState({
+    openEditListStoreModal({
       listId,
       listName: currentName,
       category,
@@ -417,7 +414,7 @@ export function KanbanBoard({
     const fallbackDestinationId =
       activeLists.find((list) => list.id !== listId && !list.archived)?.id ?? "";
 
-    setDeleteListState({
+    openDeleteListStoreModal({
       listId,
       listName: name,
       taskCount,
@@ -430,14 +427,7 @@ export function KanbanBoard({
     if (!deleteListState) return;
 
     if (deleteListState.taskCount > 0 && !deleteListState.destinationListId) {
-      setDeleteListState((current) =>
-        current
-          ? {
-              ...current,
-              error: "Choose a destination column before deleting this one.",
-            }
-          : current,
-      );
+      setDeleteError("Choose a destination column before deleting this one.");
       return;
     }
 
@@ -446,16 +436,9 @@ export function KanbanBoard({
         moveTasksToListId: deleteListState.destinationListId || null,
       });
       await refetchTasks();
-      setDeleteListState(null);
+      closeDeleteListModal();
     } catch (err) {
-      setDeleteListState((current) =>
-        current
-          ? {
-              ...current,
-              error: err instanceof Error ? err.message : "Failed to delete list",
-            }
-          : current,
-      );
+      setDeleteError(err instanceof Error ? err.message : "Failed to delete list");
     }
   }
 
@@ -469,7 +452,7 @@ export function KanbanBoard({
       name: input.name,
       category: input.category,
     });
-    setEditListState(null);
+    closeEditListModal();
   }
 
   async function handleDeleteTask(taskId: string, title: string) {
@@ -508,7 +491,7 @@ export function KanbanBoard({
         listId: modalState.listId,
         position: listTaskCount,
       });
-      setModalState(null);
+      closeTaskModal();
       return;
     }
 
@@ -520,7 +503,7 @@ export function KanbanBoard({
       assigneeId: input.assigneeId ?? null,
       dueDate: input.dueDate ?? null,
     });
-    setModalState(null);
+    closeTaskModal();
   }
 
   const boardError = listsError ?? tasksError;
@@ -595,7 +578,7 @@ export function KanbanBoard({
           </p>
           {canManageLists ? (
             <button
-              onClick={() => setIsCreateListOpen(true)}
+              onClick={openCreateListModal}
               disabled={isListsMutating}
               className="mt-6 inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:opacity-60"
             >
@@ -664,13 +647,7 @@ export function KanbanBoard({
                       {canManageTasks ? (
                         <button
                           type="button"
-                          onClick={() =>
-                            setModalState({
-                              mode: "create",
-                              listId: list.id,
-                              listName: list.name,
-                            })
-                          }
+                          onClick={() => openCreateTaskModal(list.id, list.name)}
                           disabled={isMutating}
                           className="rounded-full border border-white/20 bg-white/12 p-1.5 text-white transition hover:bg-white/20 disabled:opacity-60"
                           aria-label={`Add task to ${list.name}`}
@@ -720,7 +697,7 @@ export function KanbanBoard({
                         onEdit={
                           canManageTasks
                             ? () =>
-                                setModalState({
+                                openEditTaskModal({
                                   mode: "edit",
                                   listId: list.id,
                                   listName: list.name,
@@ -772,7 +749,7 @@ export function KanbanBoard({
         canEdit={canManageTasks && modalState?.mode === "edit"}
         canDelete={canManageTasks && modalState?.mode === "edit"}
         isSubmitting={isTasksMutating}
-        onClose={() => setModalState(null)}
+        onClose={closeTaskModal}
         onSubmit={handleTaskSubmit}
         onDelete={
           modalState?.mode === "edit" && canManageTasks
@@ -785,7 +762,7 @@ export function KanbanBoard({
         key={listModalKey}
         isOpen={isCreateListOpen}
         isSubmitting={isListsMutating}
-        onClose={() => setIsCreateListOpen(false)}
+        onClose={closeCreateListModal}
         onSubmit={handleCreateList}
       />
 
@@ -799,18 +776,8 @@ export function KanbanBoard({
           .map((list) => ({ id: list.id, name: list.name }))}
         isSubmitting={isListsMutating}
         error={deleteListState?.error ?? null}
-        onDestinationChange={(value) =>
-          setDeleteListState((current) =>
-            current
-              ? {
-                  ...current,
-                  destinationListId: value,
-                  error: null,
-                }
-              : current,
-          )
-        }
-        onClose={() => setDeleteListState(null)}
+        onDestinationChange={setDeleteDestination}
+        onClose={closeDeleteListModal}
         onSubmit={() => void handleDeleteList()}
       />
 
@@ -820,7 +787,7 @@ export function KanbanBoard({
         listName={editListState?.listName ?? ""}
         category={editListState?.category ?? "in_progress"}
         isSubmitting={isListsMutating}
-        onClose={() => setEditListState(null)}
+        onClose={closeEditListModal}
         onSubmit={handleEditListSubmit}
       />
     </div>
