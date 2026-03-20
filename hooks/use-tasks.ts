@@ -2,6 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 
+import {
+  createTaskAction,
+  deleteTaskAction,
+  reorderTasksAction,
+  updateTaskAction,
+} from "@/app/(dashboard)/projects/board-actions";
+
 type TaskFromApi = {
   id: string;
   projectId: string;
@@ -211,12 +218,7 @@ export function useTasks(projectId: string) {
       });
 
       try {
-        const response = await fetch("/api/tasks", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        const created = normalizeTask(await parseApiResponse<TaskFromApi>(response));
+        const created = normalizeTask(await createTaskAction(payload));
         await fetchTasks();
         return created;
       } catch (err) {
@@ -249,12 +251,7 @@ export function useTasks(projectId: string) {
       });
 
       try {
-        const response = await fetch(`/api/tasks/${taskId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(input),
-        });
-        const updated = normalizeTask(await parseApiResponse<TaskFromApi>(response));
+        const updated = normalizeTask(await updateTaskAction(taskId, input));
         if (input.position !== undefined || input.listId !== undefined) {
           await fetchTasks();
         } else {
@@ -282,8 +279,7 @@ export function useTasks(projectId: string) {
       });
 
       try {
-        const response = await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
-        await parseApiResponse<null>(response);
+        await deleteTaskAction(taskId);
         await fetchTasks();
       } catch (err) {
         startTransition(() => {
@@ -321,16 +317,11 @@ export function useTasks(projectId: string) {
       });
 
       try {
-        const response = await fetch("/api/tasks/reorder", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            projectId: resolvedProjectId,
-            listId: input.listId,
-            orderedTaskIds: input.orderedTaskIds,
-          }),
+        const data = await reorderTasksAction({
+          projectId: resolvedProjectId,
+          listId: input.listId,
+          orderedTaskIds: input.orderedTaskIds,
         });
-        const data = await parseApiResponse<TaskFromApi[]>(response);
         startTransition(() => {
           setTasks(data.map(normalizeTask));
         });

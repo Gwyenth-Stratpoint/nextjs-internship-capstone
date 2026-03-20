@@ -2,6 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 
+import {
+  createListAction,
+  deleteListAction,
+  reorderListsAction,
+  updateListAction,
+} from "@/app/(dashboard)/projects/board-actions";
+
 type ListFromApi = {
   id: string;
   projectId: string;
@@ -144,17 +151,14 @@ export function useLists(projectId: string) {
       });
 
       try {
-        const response = await fetch("/api/lists", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+        const created = normalizeList(
+          await createListAction({
             projectId: resolvedProjectId,
             name: input.name,
             position: input.position ?? lists.length,
             category: input.category ?? "todo",
           }),
-        });
-        const created = normalizeList(await parseApiResponse<ListFromApi>(response));
+        );
         await fetchLists();
         return created;
       } catch (err) {
@@ -186,12 +190,7 @@ export function useLists(projectId: string) {
       });
 
       try {
-        const response = await fetch(`/api/lists/${listId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(input),
-        });
-        const updated = normalizeList(await parseApiResponse<ListFromApi>(response));
+        const updated = normalizeList(await updateListAction(listId, input));
         if (input.position !== undefined) {
           await fetchLists();
         } else {
@@ -219,14 +218,9 @@ export function useLists(projectId: string) {
       });
 
       try {
-        const response = await fetch(`/api/lists/${listId}`, {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            moveTasksToListId: options?.moveTasksToListId ?? null,
-          }),
+        await deleteListAction(listId, {
+          moveTasksToListId: options?.moveTasksToListId ?? null,
         });
-        await parseApiResponse<ListFromApi>(response);
         await fetchLists();
       } catch (err) {
         startTransition(() => {
@@ -261,15 +255,10 @@ export function useLists(projectId: string) {
       });
 
       try {
-        const response = await fetch("/api/lists/reorder", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            projectId: resolvedProjectId,
-            orderedListIds: input.orderedListIds,
-          }),
+        const data = await reorderListsAction({
+          projectId: resolvedProjectId,
+          orderedListIds: input.orderedListIds,
         });
-        const data = await parseApiResponse<ListFromApi[]>(response);
         startTransition(() => {
           setLists(data.map(normalizeList));
         });

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CreateListModal } from "@/components/modals/create-list-modal";
 import { CreateTaskModal } from "@/components/modals/create-task-modal";
 import { DeleteListModal } from "@/components/modals/delete-list-modal";
+import { EditListModal } from "@/components/modals/edit-list-modal";
 import { TaskCard } from "@/components/task-card";
 import { CardInset } from "@/components/ui/card";
 import { useLists } from "@/hooks/use-lists";
@@ -40,6 +41,12 @@ type DeleteListState = {
   taskCount: number;
   destinationListId: string;
   error: string | null;
+} | null;
+
+type EditListState = {
+  listId: string;
+  listName: string;
+  category: "todo" | "in_progress" | "done";
 } | null;
 
 type ListActionsProps = {
@@ -183,7 +190,7 @@ export function KanbanBoard({
       label: "Pending",
       countClassName: "bg-white/24 text-white",
       laneClassName:
-        "border-[#d8e2ff] bg-[linear-gradient(180deg,rgba(92,119,255,0.14)_0%,rgba(255,255,255,0.92)_34%,rgba(255,255,255,0.97)_100%)]",
+        "border-[#9A8CF2] bg-[linear-gradient(180deg,rgba(124,110,230,0.15)_0%,rgba(255,255,255,0.92)_34%,rgba(255,255,255,0.97)_100%)]",
       headerClassName:
         "bg-[linear-gradient(135deg,#7C6EE6_0%,#9A8CF2_100%)] text-white shadow-[inset_0_-1px_0_rgba(255,255,255,0.14)]",
     },
@@ -191,7 +198,7 @@ export function KanbanBoard({
       label: "In Progress",
       countClassName: "bg-white/24 text-white",
       laneClassName:
-        "border-[#ffe2bb] bg-[linear-gradient(180deg,rgba(245,171,75,0.15)_0%,rgba(255,255,255,0.92)_34%,rgba(255,255,255,0.97)_100%)]",
+        "border-[#60A5FA] bg-[linear-gradient(180deg,rgba(59,130,255,0.15)_0%,rgba(255,255,255,0.92)_34%,rgba(255,255,255,0.97)_100%)]",
       headerClassName:
         "bg-[linear-gradient(135deg,#3B82F6_0%,#60A5FA_100%)] text-white shadow-[inset_0_-1px_0_rgba(255,255,255,0.14)]",
     },
@@ -199,7 +206,7 @@ export function KanbanBoard({
       label: "Completed",
       countClassName: "bg-white/24 text-white",
       laneClassName:
-        "border-[#cfeee8] bg-[linear-gradient(180deg,rgba(43,186,171,0.14)_0%,rgba(255,255,255,0.92)_34%,rgba(255,255,255,0.97)_100%)]",
+        "border-[#2fc7ba] bg-[linear-gradient(180deg,rgba(39,184,171,0.15)_0%,rgba(255,255,255,0.92)_34%,rgba(255,255,255,0.97)_100%)]",
       headerClassName:
         "bg-[linear-gradient(135deg,#27b8ab_0%,#2fc7ba_100%)] text-white shadow-[inset_0_-1px_0_rgba(255,255,255,0.14)]",
     },
@@ -232,6 +239,7 @@ export function KanbanBoard({
   const [modalState, setModalState] = useState<ModalState>(null);
   const [isCreateListOpen, setIsCreateListOpen] = useState(false);
   const [deleteListState, setDeleteListState] = useState<DeleteListState>(null);
+  const [editListState, setEditListState] = useState<EditListState>(null);
   const [dragState, setDragState] = useState<{
     taskId: string;
     overListId: string | null;
@@ -392,15 +400,16 @@ export function KanbanBoard({
     });
   }
 
-  async function handleRenameList(listId: string, currentName: string) {
-    const nextName = window.prompt("Rename list", currentName);
-    if (!nextName?.trim() || nextName.trim() === currentName) return;
-
-    try {
-      await updateList(listId, { name: nextName.trim() });
-    } catch (err) {
-      window.alert(err instanceof Error ? err.message : "Failed to rename list");
-    }
+  function openEditListModal(
+    listId: string,
+    currentName: string,
+    category: "todo" | "in_progress" | "done",
+  ) {
+    setEditListState({
+      listId,
+      listName: currentName,
+      category,
+    });
   }
 
   function openDeleteListModal(listId: string, name: string) {
@@ -450,30 +459,17 @@ export function KanbanBoard({
     }
   }
 
-  async function handleCategoryUpdate(
-    listId: string,
-    currentCategory: "todo" | "in_progress" | "done",
-  ) {
-    const categoryInput = window.prompt(
-      'Set category: "todo", "in_progress", or "done". Projects allow only one "todo" and one "done" list.',
-      currentCategory,
-    );
-    if (!categoryInput?.trim()) return;
+  async function handleEditListSubmit(input: {
+    name: string;
+    category: "todo" | "in_progress" | "done";
+  }) {
+    if (!editListState) return;
 
-    const normalizedCategory =
-      categoryInput === "todo" || categoryInput === "in_progress" || categoryInput === "done"
-        ? categoryInput
-        : null;
-
-    if (!normalizedCategory || normalizedCategory === currentCategory) return;
-
-    try {
-      await updateList(listId, {
-        category: normalizedCategory,
-      });
-    } catch (err) {
-      window.alert(err instanceof Error ? err.message : "Failed to update list category");
-    }
+    await updateList(editListState.listId, {
+      name: input.name,
+      category: input.category,
+    });
+    setEditListState(null);
   }
 
   async function handleDeleteTask(taskId: string, title: string) {
@@ -622,13 +618,13 @@ export function KanbanBoard({
             {activeLists.map((list) => {
               const listTasks = tasksByList.get(list.id) ?? [];
               const onRenameList = canManageLists
-                ? () => void handleRenameList(list.id, list.name)
+                ? () => openEditListModal(list.id, list.name, list.category)
                 : undefined;
               const onDeleteList = canManageLists
                 ? () => openDeleteListModal(list.id, list.name)
                 : undefined;
               const onRenameCategory = canManageLists
-                ? () => void handleCategoryUpdate(list.id, list.category)
+                ? () => openEditListModal(list.id, list.name, list.category)
                 : undefined;
               const tone = categoryMeta[list.category];
 
@@ -816,6 +812,16 @@ export function KanbanBoard({
         }
         onClose={() => setDeleteListState(null)}
         onSubmit={() => void handleDeleteList()}
+      />
+
+      <EditListModal
+        key={editListState ? `edit-list-${editListState.listId}` : "edit-list-closed"}
+        isOpen={editListState !== null}
+        listName={editListState?.listName ?? ""}
+        category={editListState?.category ?? "in_progress"}
+        isSubmitting={isListsMutating}
+        onClose={() => setEditListState(null)}
+        onSubmit={handleEditListSubmit}
       />
     </div>
   );

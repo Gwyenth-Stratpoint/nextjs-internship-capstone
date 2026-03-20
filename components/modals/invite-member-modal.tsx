@@ -4,6 +4,7 @@ import { Mail, Shield, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { inviteWorkspaceMemberAction } from "@/app/(dashboard)/team/actions";
 import {
   CenteredModalSurface,
   ModalBackdrop,
@@ -37,16 +38,7 @@ export function InviteMemberModal({ isOpen, onClose }: InviteMemberModalProps) {
     setError(null);
 
     try {
-      const response = await fetch("/api/team/invitations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, role }),
-      });
-      const payload = await response.json();
-
-      if (!response.ok || !payload.success) {
-        throw new Error(payload?.error?.message ?? "Failed to send invite");
-      }
+      await inviteWorkspaceMemberAction({ email, role });
 
       setEmail("");
       setRole("org:member");
