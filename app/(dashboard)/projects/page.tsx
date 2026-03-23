@@ -48,6 +48,7 @@ export default function ProjectsPage() {
   }) {
     try {
       await createProject(input);
+      setIsCreateModalOpen(false);
     } catch (err) {
       throw new Error(getCreateProjectErrorMessage(err));
     }

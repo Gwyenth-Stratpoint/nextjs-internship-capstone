@@ -3,6 +3,7 @@
 import { z } from "zod";
 
 import { requireDbUserId } from "@/lib/auth";
+import { createTaskComment } from "@/lib/server/comment-crud";
 import {
   createProjectList,
   deleteProjectList,
@@ -20,6 +21,7 @@ import {
   listReorderSchema,
   listSchema,
   listUpdateSchema,
+  commentSchema,
   taskReorderSchema,
   taskSchema,
   taskUpdateSchema,
@@ -77,4 +79,10 @@ export async function reorderTasksAction(input: z.input<typeof taskReorderSchema
   const userId = await requireDbUserId();
   const payload = taskReorderSchema.parse(input);
   return reorderProjectTasks(userId, payload);
+}
+
+export async function createCommentAction(input: z.input<typeof commentSchema>) {
+  const userId = await requireDbUserId();
+  const payload = commentSchema.parse(input);
+  return createTaskComment(payload.taskId, userId, payload);
 }

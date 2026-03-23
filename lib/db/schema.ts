@@ -63,6 +63,12 @@ export const activityActionEnum = pgEnum("activity_action", [
   "unarchived",
 ]);
 
+export const projectInvitationStatusEnum = pgEnum("project_invitation_status", [
+  "pending",
+  "accepted",
+  "revoked",
+]);
+
 // --------------------
 // Users (synced from Clerk)
 // --------------------
@@ -207,6 +213,36 @@ export const projectMembers = pgTable(
     projIdx: index("project_members_project_id_idx").on(t.projectId),
     userIdx: index("project_members_user_id_idx").on(t.userId),
     roleIdx: index("project_members_role_idx").on(t.role),
+  }),
+);
+
+export const projectInvitations = pgTable(
+  "project_invitations",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    clerkOrgId: text("clerk_org_id").notNull(),
+    email: text("email").notNull(),
+    role: projectRoleEnum("role").notNull().default("member"),
+    workspaceRoleKey: text("workspace_role_key").notNull().default("org:member"),
+    clerkInvitationId: text("clerk_invitation_id"),
+    status: projectInvitationStatusEnum("status").notNull().default("pending"),
+    invitedById: uuid("invited_by_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    acceptedByUserId: uuid("accepted_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+  },
+  (t) => ({
+    projectIdx: index("project_invitations_project_id_idx").on(t.projectId),
+    emailIdx: index("project_invitations_email_idx").on(t.email),
+    clerkOrgIdx: index("project_invitations_clerk_org_id_idx").on(t.clerkOrgId),
+    statusIdx: index("project_invitations_status_idx").on(t.status),
   }),
 );
 

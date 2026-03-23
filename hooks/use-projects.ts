@@ -7,6 +7,7 @@ import {
   deleteProjectAction,
   updateProjectAction,
 } from "@/app/(dashboard)/projects/actions";
+import { usePolling } from "@/hooks/use-polling";
 
 type ProjectFromApi = {
   id: string;
@@ -95,29 +96,43 @@ async function parseApiResponse<T>(response: Response): Promise<T> {
 }
 
 export function useProjects() {
+  const PROJECTS_POLL_INTERVAL_MS = 10000;
   const [projects, setProjects] = useState<ProjectFromApi[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const fetchProjects = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  const fetchProjects = useCallback(async (options?: { silent?: boolean }) => {
+    const isSilent = options?.silent ?? false;
+
+    if (!isSilent) {
+      setIsLoading(true);
+      setError(null);
+    }
 
     try {
       const response = await fetch("/api/projects", { method: "GET", cache: "no-store" });
       const data = await parseApiResponse<ProjectFromApi[]>(response);
       setProjects(data.map(normalizeProject));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch projects");
+      if (!isSilent) {
+        setError(err instanceof Error ? err.message : "Failed to fetch projects");
+      }
     } finally {
-      setIsLoading(false);
+      if (!isSilent) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
     void fetchProjects();
   }, [fetchProjects]);
+
+  usePolling(() => fetchProjects({ silent: true }), {
+    enabled: true,
+    intervalMs: PROJECTS_POLL_INTERVAL_MS,
+  });
 
   const createProject = useCallback(
     async (input: CreateProjectInput) => {

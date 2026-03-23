@@ -8,6 +8,7 @@ import {
   reorderTasksAction,
   updateTaskAction,
 } from "@/app/(dashboard)/projects/board-actions";
+import { usePolling } from "@/hooks/use-polling";
 
 type TaskFromApi = {
   id: string;
@@ -135,39 +136,56 @@ async function parseApiResponse<T>(response: Response): Promise<T> {
 }
 
 export function useTasks(projectId: string) {
+  const TASKS_POLL_INTERVAL_MS = 5000;
   const [tasks, setTasks] = useState<TaskFromApi[]>([]);
   const [isLoading, setIsLoading] = useState(Boolean(projectId));
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const fetchTasks = useCallback(async () => {
-    if (!projectId) {
-      setTasks([]);
-      setIsLoading(false);
-      setError(null);
-      return;
-    }
+  const fetchTasks = useCallback(
+    async (options?: { silent?: boolean }) => {
+      const isSilent = options?.silent ?? false;
 
-    setIsLoading(true);
-    setError(null);
+      if (!projectId) {
+        setTasks([]);
+        setIsLoading(false);
+        setError(null);
+        return;
+      }
 
-    try {
-      const response = await fetch(`/api/tasks?projectId=${encodeURIComponent(projectId)}`, {
-        method: "GET",
-        cache: "no-store",
-      });
-      const data = await parseApiResponse<TaskFromApi[]>(response);
-      setTasks(data.map(normalizeTask));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch tasks");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [projectId]);
+      if (!isSilent) {
+        setIsLoading(true);
+        setError(null);
+      }
+
+      try {
+        const response = await fetch(`/api/tasks?projectId=${encodeURIComponent(projectId)}`, {
+          method: "GET",
+          cache: "no-store",
+        });
+        const data = await parseApiResponse<TaskFromApi[]>(response);
+        setTasks(data.map(normalizeTask));
+      } catch (err) {
+        if (!isSilent) {
+          setError(err instanceof Error ? err.message : "Failed to fetch tasks");
+        }
+      } finally {
+        if (!isSilent) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [projectId],
+  );
 
   useEffect(() => {
     void fetchTasks();
   }, [fetchTasks]);
+
+  usePolling(() => fetchTasks({ silent: true }), {
+    enabled: Boolean(projectId),
+    intervalMs: TASKS_POLL_INTERVAL_MS,
+  });
 
   const createTask = useCallback(
     async (input: Omit<CreateTaskInput, "projectId"> & { projectId?: string }) => {

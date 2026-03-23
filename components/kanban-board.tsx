@@ -9,6 +9,7 @@ import { DeleteListModal } from "@/components/modals/delete-list-modal";
 import { EditListModal } from "@/components/modals/edit-list-modal";
 import { TaskCard } from "@/components/task-card";
 import { CardInset } from "@/components/ui/card";
+import { useComments } from "@/hooks/use-comments";
 import { useLists } from "@/hooks/use-lists";
 import { useTasks } from "@/hooks/use-tasks";
 import { useBoardStore } from "@/stores/board-store";
@@ -256,6 +257,14 @@ export function KanbanBoard({
   const startDrag = useBoardStore((state) => state.startDrag);
   const updateDragTarget = useBoardStore((state) => state.updateDragTarget);
   const clearDrag = useBoardStore((state) => state.clearDrag);
+  const activeTaskId = modalState?.mode === "edit" ? modalState.task.id : null;
+  const {
+    comments,
+    activityItems,
+    isLoading: isCommentsLoading,
+    isMutating: isCommentSubmitting,
+    createComment,
+  } = useComments(activeTaskId);
 
   useEffect(() => {
     setProjectScope(projectId);
@@ -395,6 +404,7 @@ export function KanbanBoard({
       position: activeLists.length,
       category: "in_progress",
     });
+    closeCreateListModal();
   }
 
   function openEditListModal(
@@ -504,6 +514,11 @@ export function KanbanBoard({
       dueDate: input.dueDate ?? null,
     });
     closeTaskModal();
+  }
+
+  async function handleCreateComment(content: string) {
+    await createComment(content);
+    await refetchTasks();
   }
 
   const boardError = listsError ?? tasksError;
@@ -744,13 +759,25 @@ export function KanbanBoard({
             : null
         }
         assigneeOptions={[]}
-        comments={[]}
-        activityItems={[]}
+        comments={comments.map((comment) => ({
+          id: comment.id,
+          authorName: comment.authorName ?? "Unknown user",
+          content: comment.content,
+          createdAt: comment.createdAt,
+        }))}
+        activityItems={activityItems}
+        isCommentsLoading={isCommentsLoading}
+        isCommentSubmitting={isCommentSubmitting}
         canEdit={canManageTasks && modalState?.mode === "edit"}
         canDelete={canManageTasks && modalState?.mode === "edit"}
         isSubmitting={isTasksMutating}
         onClose={closeTaskModal}
         onSubmit={handleTaskSubmit}
+        onCreateComment={
+          modalState?.mode === "edit" && canManageTasks
+            ? (content) => handleCreateComment(content)
+            : undefined
+        }
         onDelete={
           modalState?.mode === "edit" && canManageTasks
             ? () => handleDeleteTask(modalState.task.id, modalState.task.title)

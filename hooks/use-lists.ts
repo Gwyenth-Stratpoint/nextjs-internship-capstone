@@ -8,6 +8,7 @@ import {
   reorderListsAction,
   updateListAction,
 } from "@/app/(dashboard)/projects/board-actions";
+import { usePolling } from "@/hooks/use-polling";
 
 type ListFromApi = {
   id: string;
@@ -90,41 +91,58 @@ async function parseApiResponse<T>(response: Response): Promise<T> {
 }
 
 export function useLists(projectId: string) {
+  const LISTS_POLL_INTERVAL_MS = 5000;
   // List state for the current project board.
   const [lists, setLists] = useState<ListFromApi[]>([]);
   const [isLoading, setIsLoading] = useState(Boolean(projectId));
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const fetchLists = useCallback(async () => {
-    if (!projectId) {
-      setLists([]);
-      setIsLoading(false);
-      setError(null);
-      return;
-    }
+  const fetchLists = useCallback(
+    async (options?: { silent?: boolean }) => {
+      const isSilent = options?.silent ?? false;
 
-    setIsLoading(true);
-    setError(null);
+      if (!projectId) {
+        setLists([]);
+        setIsLoading(false);
+        setError(null);
+        return;
+      }
 
-    try {
-      const response = await fetch(`/api/lists?projectId=${encodeURIComponent(projectId)}`, {
-        method: "GET",
-        cache: "no-store",
-      });
-      const data = await parseApiResponse<ListFromApi[]>(response);
-      setLists(data.map(normalizeList));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch lists");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [projectId]);
+      if (!isSilent) {
+        setIsLoading(true);
+        setError(null);
+      }
+
+      try {
+        const response = await fetch(`/api/lists?projectId=${encodeURIComponent(projectId)}`, {
+          method: "GET",
+          cache: "no-store",
+        });
+        const data = await parseApiResponse<ListFromApi[]>(response);
+        setLists(data.map(normalizeList));
+      } catch (err) {
+        if (!isSilent) {
+          setError(err instanceof Error ? err.message : "Failed to fetch lists");
+        }
+      } finally {
+        if (!isSilent) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [projectId],
+  );
 
   // Load project columns whenever the active project changes.
   useEffect(() => {
     void fetchLists();
   }, [fetchLists]);
+
+  usePolling(() => fetchLists({ silent: true }), {
+    enabled: Boolean(projectId),
+    intervalMs: LISTS_POLL_INTERVAL_MS,
+  });
 
   const createList = useCallback(
     async (input: Omit<CreateListInput, "projectId"> & { projectId?: string }) => {

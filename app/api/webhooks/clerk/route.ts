@@ -5,7 +5,71 @@ import type { WebhookEvent } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { users, workspaces } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { resolvePendingProjectInvitationsForWorkspaceMember } from "@/lib/server/project-members-crud";
 import { syncWorkspaceFromClerkOrganization } from "@/lib/server/workspace-crud";
+
+function getStringValue(value: unknown) {
+  return typeof value === "string" ? value : null;
+}
+
+function getMembershipUserId(data: unknown) {
+  if (!data || typeof data !== "object") {
+    return null;
+  }
+
+  const publicUserData =
+    "public_user_data" in data
+      ? (data as { public_user_data?: Record<string, unknown> }).public_user_data
+      : "publicUserData" in data
+        ? (data as { publicUserData?: Record<string, unknown> }).publicUserData
+        : null;
+
+  if (!publicUserData || typeof publicUserData !== "object") {
+    return null;
+  }
+
+  return (
+    getStringValue(publicUserData.user_id) ??
+    getStringValue(publicUserData.userId) ??
+    getStringValue("user_id" in data ? (data as { user_id?: unknown }).user_id : null)
+  );
+}
+
+function getMembershipEmail(data: unknown) {
+  if (!data || typeof data !== "object") {
+    return null;
+  }
+
+  const publicUserData =
+    "public_user_data" in data
+      ? (data as { public_user_data?: Record<string, unknown> }).public_user_data
+      : "publicUserData" in data
+        ? (data as { publicUserData?: Record<string, unknown> }).publicUserData
+        : null;
+
+  if (!publicUserData || typeof publicUserData !== "object") {
+    return null;
+  }
+
+  return (
+    getStringValue(publicUserData.identifier) ??
+    getStringValue(publicUserData.email_address) ??
+    getStringValue(publicUserData.emailAddress)
+  );
+}
+
+function getMembershipOrgId(data: unknown) {
+  if (!data || typeof data !== "object") {
+    return null;
+  }
+
+  const organization =
+    "organization" in data
+      ? (data as { organization?: Record<string, unknown> }).organization
+      : null;
+
+  return getStringValue(organization?.id);
+}
 
 export async function POST(req: Request) {
   const secret = process.env.CLERK_WEBHOOK_SECRET;
@@ -73,6 +137,20 @@ export async function POST(req: Request) {
 
     if (type === "organization.deleted" && data.id) {
       await db.delete(workspaces).where(eq(workspaces.clerkOrgId, data.id));
+    }
+
+    if (type === "organizationMembership.created" || type === "organizationMembership.updated") {
+      const clerkUserId = getMembershipUserId(data);
+      const clerkOrgId = getMembershipOrgId(data);
+      const email = getMembershipEmail(data);
+
+      if (clerkUserId && clerkOrgId) {
+        await resolvePendingProjectInvitationsForWorkspaceMember({
+          clerkOrgId,
+          clerkUserId,
+          email,
+        });
+      }
     }
 
     return new Response("OK", { status: 200 });

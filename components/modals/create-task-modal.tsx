@@ -68,10 +68,13 @@ type CreateTaskModalProps = {
   assigneeOptions?: TaskAssigneeOption[];
   comments?: TaskComment[];
   activityItems?: TaskActivityItem[];
+  isCommentsLoading?: boolean;
+  isCommentSubmitting?: boolean;
   isSubmitting?: boolean;
   onClose: () => void;
   onSubmit: (input: TaskDraft & { attachments: File[] }) => Promise<void>;
   onDelete?: () => Promise<void> | void;
+  onCreateComment?: (content: string) => Promise<void>;
 };
 
 const emptyTask: TaskDraft = {
@@ -508,13 +511,25 @@ function AttachmentsSection({
 function EditPanels({
   comments,
   activityItems,
+  isCommentsLoading,
+  isCommentSubmitting,
   activePanel,
+  commentDraft,
+  commentError,
   onChangePanel,
+  onCommentChange,
+  onCreateComment,
 }: {
   comments: TaskComment[];
   activityItems: TaskActivityItem[];
+  isCommentsLoading: boolean;
+  isCommentSubmitting: boolean;
   activePanel: "comments" | "activity";
+  commentDraft: string;
+  commentError: string | null;
   onChangePanel: (value: "comments" | "activity") => void;
+  onCommentChange: (value: string) => void;
+  onCreateComment?: () => Promise<void>;
 }) {
   return (
     <div className="space-y-2.5">
@@ -539,20 +554,33 @@ function EditPanels({
         <div className="space-y-2.5 rounded-xl border border-slate-200 bg-slate-50 p-3.5">
           <textarea
             rows={4}
+            value={commentDraft}
+            onChange={(event) => onCommentChange(event.target.value)}
             className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             placeholder="Write a comment..."
           />
           <div className="flex items-center justify-between text-xs text-slate-500">
-            <span>Real-time comments still need the comments API to be connected.</span>
+            <span>
+              {isCommentsLoading
+                ? "Loading comments..."
+                : "Comments are saved to this task immediately."}
+            </span>
             <button
               type="button"
-              className="rounded-full bg-violet-500 px-3 py-1.5 font-medium text-white"
+              onClick={() => void onCreateComment?.()}
+              disabled={!onCreateComment || isCommentSubmitting || !commentDraft.trim()}
+              className="rounded-full bg-violet-500 px-3 py-1.5 font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Post
+              {isCommentSubmitting ? "Posting..." : "Post"}
             </button>
           </div>
+          {commentError ? <p className="text-xs text-red-600">{commentError}</p> : null}
           <div className="space-y-2.5 border-t border-slate-200 pt-2.5">
-            {comments.length > 0 ? (
+            {isCommentsLoading ? (
+              <p className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-500">
+                Loading comments...
+              </p>
+            ) : comments.length > 0 ? (
               comments.map((comment) => (
                 <div
                   key={comment.id}
@@ -610,13 +638,18 @@ export function CreateTaskModal({
   assigneeOptions = [],
   comments = [],
   activityItems = [],
+  isCommentsLoading = false,
+  isCommentSubmitting = false,
   isSubmitting = false,
   onClose,
   onSubmit,
   onDelete,
+  onCreateComment,
 }: CreateTaskModalProps) {
   const [form, setForm] = useState<TaskDraft>(() => getInitialTaskState(initialTask));
   const [error, setError] = useState<string | null>(null);
+  const [commentError, setCommentError] = useState<string | null>(null);
+  const [commentDraft, setCommentDraft] = useState("");
   const [labelInput, setLabelInput] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
   const [activePanel, setActivePanel] = useState<"comments" | "activity">("comments");
@@ -652,6 +685,24 @@ export function CreateTaskModal({
 
   function handleAttachmentSelection(event: ChangeEvent<HTMLInputElement>) {
     setAttachments(Array.from(event.target.files ?? []));
+  }
+
+  async function handleCreateComment() {
+    if (!onCreateComment) return;
+
+    const trimmedComment = commentDraft.trim();
+    if (!trimmedComment) {
+      setCommentError("Comment is required");
+      return;
+    }
+
+    try {
+      setCommentError(null);
+      await onCreateComment(trimmedComment);
+      setCommentDraft("");
+    } catch (err) {
+      setCommentError(err instanceof Error ? err.message : "Failed to post comment");
+    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -856,8 +907,14 @@ export function CreateTaskModal({
               <EditPanels
                 comments={displayComments}
                 activityItems={displayActivity}
+                isCommentsLoading={isCommentsLoading}
+                isCommentSubmitting={isCommentSubmitting}
                 activePanel={activePanel}
+                commentDraft={commentDraft}
+                commentError={commentError}
                 onChangePanel={setActivePanel}
+                onCommentChange={setCommentDraft}
+                onCreateComment={onCreateComment ? handleCreateComment : undefined}
               />
             ) : null}
 

@@ -37,6 +37,7 @@
     "next": "^16.0.0",
     "react": "^19",
     "react-dom": "^19",
+    "recharts": "^3.8.0",
     "svix": "^1.86.0",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",

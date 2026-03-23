@@ -62,6 +62,13 @@ export const projectMemberSchema = z.object({
   role: z.enum(["owner", "admin", "member", "viewer"]),
 });
 
+export const projectInvitationSchema = z.object({
+  projectId: uuid,
+  email: z.email("Enter a valid email address"),
+  role: z.enum(["owner", "admin", "member", "viewer"]),
+  workspaceRoleKey: z.enum(["org:admin", "org:member"]).default("org:member"),
+});
+
 export const listSchema = z.object({
   projectId: uuid,
   name: z.string().min(1, "Name is required").max(60, "Name too long"),
