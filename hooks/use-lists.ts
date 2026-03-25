@@ -92,7 +92,6 @@ async function parseApiResponse<T>(response: Response): Promise<T> {
 
 export function useLists(projectId: string) {
   const LISTS_POLL_INTERVAL_MS = 5000;
-  // List state for the current project board.
   const [lists, setLists] = useState<ListFromApi[]>([]);
   const [isLoading, setIsLoading] = useState(Boolean(projectId));
   const [error, setError] = useState<string | null>(null);

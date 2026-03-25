@@ -22,7 +22,7 @@ type ProjectMembersModalProps = {
 };
 
 type WorkspaceRoleKey = "org:admin" | "org:member";
-type ProjectRole = "owner" | "admin" | "member" | "viewer";
+type ProjectRole = "admin" | "member" | "viewer";
 
 function getInitials(name: string | null) {
   return (name ?? "Workspace member")
@@ -198,7 +198,6 @@ export function ProjectMembersModal({
                         <option value="viewer">Viewer</option>
                         <option value="member">Member</option>
                         <option value="admin">Admin</option>
-                        <option value="owner">Owner</option>
                       </select>
                     </ModalInputShell>
                   </ModalField>

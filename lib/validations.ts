@@ -1,8 +1,3 @@
-// TODO: Task 3.6 - Set up data validation with Zod schemas
-
-/*
-TODO: Implementation Notes for Interns: */
-
 import { z } from "zod";
 
 const uuid = z.string().uuid();
@@ -59,13 +54,13 @@ export const projectUpdateSchema = z
 export const projectMemberSchema = z.object({
   projectId: uuid,
   userId: uuid,
-  role: z.enum(["owner", "admin", "member", "viewer"]),
+  role: z.enum(["admin", "member", "viewer"]),
 });
 
 export const projectInvitationSchema = z.object({
   projectId: uuid,
   email: z.email("Enter a valid email address"),
-  role: z.enum(["owner", "admin", "member", "viewer"]),
+  role: z.enum(["admin", "member", "viewer"]),
   workspaceRoleKey: z.enum(["org:admin", "org:member"]).default("org:member"),
 });
 

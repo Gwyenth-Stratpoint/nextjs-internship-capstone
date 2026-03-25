@@ -43,7 +43,7 @@ async function getAccessibleTaskScope(taskId: string, userId: string) {
 
 export async function listTaskComments(taskId: string, userId: string) {
   const task = await getAccessibleTaskScope(taskId, userId);
-  await assertProjectRole(task.projectId, userId, ["owner", "admin", "member", "viewer"]);
+  await assertProjectRole(task.projectId, userId, ["admin", "member", "viewer"]);
 
   return db
     .select({
@@ -66,7 +66,7 @@ export async function createTaskComment(
   input: CreateTaskCommentInput,
 ) {
   const task = await getAccessibleTaskScope(taskId, userId);
-  await assertProjectRole(task.projectId, userId, ["owner", "admin", "member"]);
+  await assertProjectRole(task.projectId, userId, ["admin", "member"]);
 
   const [createdComment] = await db
     .insert(comments)
@@ -120,7 +120,7 @@ export async function listTaskActivity(
   userId: string,
 ): Promise<TaskActivityItem[]> {
   const task = await getAccessibleTaskScope(taskId, userId);
-  await assertProjectRole(task.projectId, userId, ["owner", "admin", "member", "viewer"]);
+  await assertProjectRole(task.projectId, userId, ["admin", "member", "viewer"]);
 
   const rows = await db
     .select({

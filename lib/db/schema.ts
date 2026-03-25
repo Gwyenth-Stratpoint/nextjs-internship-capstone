@@ -33,7 +33,7 @@ import {
 export const workspaceRoleEnum = pgEnum("workspace_role", ["owner", "admin", "member"]);
 
 // Project-level RBAC role (Phase 6.4 “project member management and permissions”)
-export const projectRoleEnum = pgEnum("project_role", ["owner", "admin", "member", "viewer"]);
+export const projectRoleEnum = pgEnum("project_role", ["admin", "member", "viewer"]);
 
 // Invitation / membership status for workspace members
 export const membershipStatusEnum = pgEnum("membership_status", ["invited", "active", "suspended"]);
@@ -139,7 +139,6 @@ export const workspaceMembers = pgTable(
 
     status: membershipStatusEnum("status").notNull().default("active"),
 
-    // For invite flows: you can store who invited them + when accepted
     invitedById: uuid("invited_by_id").references(() => users.id, {
       onDelete: "set null",
     }),
@@ -158,9 +157,7 @@ export const workspaceMembers = pgTable(
   }),
 );
 
-// --------------------
 // Projects (belong to a workspace)
-// --------------------
 export const projects = pgTable(
   "projects",
   {
@@ -170,10 +167,9 @@ export const projects = pgTable(
       .references(() => workspaces.id, { onDelete: "cascade" }),
 
     name: text("name").notNull(),
-    key: text("key"), // optional: "ABC" like Jira
+    key: text("key"), 
     description: text("description"),
 
-    // Project deadline (added to align with TODO)
     dueDate: timestamp("due_date", { withTimezone: true }),
 
     createdById: uuid("created_by_id").references(() => users.id, {
@@ -191,7 +187,6 @@ export const projects = pgTable(
   }),
 );
 
-// Project membership is what you enforce for RBAC in Phase 6.4
 export const projectMembers = pgTable(
   "project_members",
   {
@@ -246,9 +241,7 @@ export const projectInvitations = pgTable(
   }),
 );
 
-// --------------------
 // Lists / Columns (Kanban lanes inside a project)
-// --------------------
 export const lists = pgTable(
   "lists",
   {
@@ -272,9 +265,7 @@ export const lists = pgTable(
   }),
 );
 
-// --------------------
 // Tasks (Issues)
-// --------------------
 export const tasks = pgTable(
   "tasks",
   {
@@ -324,8 +315,7 @@ export const tasks = pgTable(
   }),
 );
 
-// Optional: multi-assignee / collaborators (if you want more than one assignee)
-// If you only want a single assignee, you can skip this.
+//multi-assignee / collaborators 
 export const taskCollaborators = pgTable(
   "task_collaborators",
   {
@@ -344,9 +334,7 @@ export const taskCollaborators = pgTable(
   }),
 );
 
-// --------------------
 // Labels (project-scoped) + Task Labels (many-to-many)
-// --------------------
 export const labels = pgTable(
   "labels",
   {
@@ -357,7 +345,6 @@ export const labels = pgTable(
 
     name: text("name").notNull(),
 
-    // UI color can be stored as string (e.g., "#AABBCC") if you want.
     color: text("color"),
 
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -385,9 +372,7 @@ export const taskLabels = pgTable(
   }),
 );
 
-// --------------------
 // Comments
-// --------------------
 export const comments = pgTable(
   "comments",
   {
@@ -400,7 +385,6 @@ export const comments = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
 
-    // renamed from `body` -> `content` to align with TODO naming
     content: text("content").notNull(),
 
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -415,9 +399,7 @@ export const comments = pgTable(
   }),
 );
 
-// --------------------
 // Activity History (audit log / timeline)
-// --------------------
 export const activity = pgTable(
   "activity",
   {
@@ -439,8 +421,7 @@ export const activity = pgTable(
 
     action: activityActionEnum("action").notNull(),
 
-    // Store what changed; keep flexible.
-    // Example: { field: "status", from: "open", to: "in_progress" }
+
     meta: jsonb("meta").notNull().default({}),
 
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -454,9 +435,8 @@ export const activity = pgTable(
   }),
 );
 
-// --------------------
-// Attachments (optional; store metadata for uploads)
-// --------------------
+
+// Attachments 
 export const attachments = pgTable(
   "attachments",
   {
@@ -481,18 +461,3 @@ export const attachments = pgTable(
     uploaderIdx: index("attachments_uploader_id_idx").on(t.uploaderId),
   }),
 );
-
-// --------------------
-// Helpful notes (not code):
-// --------------------
-//
-// 1) Enforce that a user must be a workspace member to access workspace projects.
-//    Then enforce project permissions via projectMembers.role.
-//
-// 2) Your Team page in the screenshot comes from workspaceMembers.
-//    The “X projects” number can be computed as a COUNT(project_members) joined through projects.workspace_id.
-//
-// 3) Option A invites: "Invite member" should only add users that already exist in `users`.
-//    If later you want invite-by-email for non-users, add a workspace_invitations table.
-//
-// 4) Assignee must be a project member: enforce in API (app-layer).

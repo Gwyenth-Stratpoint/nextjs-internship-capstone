@@ -141,7 +141,7 @@ async function parseApiResponse<T>(response: Response): Promise<T> {
 }
 
 export function useTasks(projectId: string) {
-  const TASKS_POLL_INTERVAL_MS = 5000;
+  const TASKS_POLL_INTERVAL_MS =  0;
   const [tasks, setTasks] = useState<TaskFromApi[]>([]);
   const [isLoading, setIsLoading] = useState(Boolean(projectId));
   const [error, setError] = useState<string | null>(null);

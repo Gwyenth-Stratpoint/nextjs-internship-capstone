@@ -6,7 +6,7 @@ type ProjectAssignee = {
   id: string;
   name: string | null;
   email: string;
-  role: "owner" | "admin" | "member" | "viewer";
+  role: "admin" | "member" | "viewer";
 };
 
 type ApiSuccess<T> = {

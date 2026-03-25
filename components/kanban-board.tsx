@@ -17,7 +17,7 @@ import { useBoardStore } from "@/stores/board-store";
 
 type TaskStatus = "open" | "in_progress" | "blocked" | "done";
 type TaskPriority = "none" | "low" | "medium" | "high" | "urgent";
-type ProjectRole = "owner" | "admin" | "member" | "viewer";
+type ProjectRole = "admin" | "member" | "viewer";
 
 type ModalState =
   | { mode: "create"; listId: string; listName: string }
@@ -180,7 +180,7 @@ export function KanbanBoard({
   onCreateListActionChange,
   onProgressChange,
 }: KanbanBoardProps) {
-  const canManageLists = role === "owner" || role === "admin";
+  const canManageLists = role === "admin";
   const canManageTasks = canManageLists || role === "member";
   const categoryMeta: Record<
     "todo" | "in_progress" | "done",

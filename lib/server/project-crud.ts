@@ -25,11 +25,7 @@ type UpdateProjectInput = Partial<{
 }>;
 
 function mapOrganizationRoleToProjectRole(orgRole: string | null) {
-  if (orgRole === "org:owner") {
-    return "owner" as const;
-  }
-
-  if (orgRole === "org:admin") {
+  if (orgRole === "org:owner" || orgRole === "org:admin") {
     return "admin" as const;
   }
 
@@ -144,7 +140,7 @@ export async function listAccessibleProjects(userId: string, clerkOrgId: string)
     .innerJoin(workspaces, eq(workspaces.id, projects.workspaceId))
     .where(eq(workspaces.clerkOrgId, clerkOrgId))
     .orderBy(desc(projects.createdAt));
-}
+   }
 
 export async function getAccessibleProjectById(
   projectId: string,
@@ -152,7 +148,6 @@ export async function getAccessibleProjectById(
   clerkOrgId: string,
 ) {
   const membership = await assertProjectRole(projectId, userId, [
-    "owner",
     "admin",
     "member",
     "viewer",
@@ -172,7 +167,7 @@ export async function getAccessibleProjectById(
       role: projectMembers.role,
     })
     .from(projects)
-    .innerJoin(
+    .leftJoin(
       projectMembers,
       and(eq(projectMembers.projectId, projects.id), eq(projectMembers.userId, userId)),
     )
@@ -190,7 +185,7 @@ export async function getAccessibleProjectById(
   };
 }
 
-export async function createOwnedProject(
+export async function createProject(
   userId: string,
   clerkOrgId: string,
   input: CreateProjectInput,
@@ -217,7 +212,7 @@ export async function createOwnedProject(
     await db.insert(projectMembers).values({
       projectId: project.id,
       userId,
-      role: "owner",
+      role: "admin",
     });
 
     await ensureProjectDefaultLists(project.id, input.template ?? "simple");
@@ -240,17 +235,17 @@ export async function createOwnedProject(
 
   return {
     ...project,
-    role: "owner" as const,
+    role: "admin" as const,
   };
 }
 
-export async function updateOwnedProject(
+export async function updateProject(
   projectId: string,
   userId: string,
   clerkOrgId: string,
   input: UpdateProjectInput,
 ) {
-  const membership = await assertProjectRole(projectId, userId, ["owner", "admin"]);
+  const membership = await assertProjectRole(projectId, userId, ["admin"]);
 
   const [scopedProject] = await db
     .select({ id: projects.id })
@@ -318,8 +313,8 @@ export async function updateOwnedProject(
   };
 }
 
-export async function deleteOwnedProject(projectId: string, userId: string, clerkOrgId: string) {
-  await assertProjectRole(projectId, userId, ["owner", "admin"]);
+export async function deleteProject(projectId: string, userId: string, clerkOrgId: string) {
+  await assertProjectRole(projectId, userId, ["admin"]);
 
   const [scopedProject] = await db
     .select({ id: projects.id })

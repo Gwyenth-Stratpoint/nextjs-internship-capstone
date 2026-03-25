@@ -4,14 +4,10 @@ import { getActiveClerkOrgRole, requireActiveClerkOrgId } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { projectMembers, projects, workspaces } from "@/lib/db/schema";
 
-export type ProjectRole = "owner" | "admin" | "member" | "viewer";
+export type ProjectRole = "admin" | "member" | "viewer";
 
 function mapOrganizationRoleToProjectRole(orgRole: string | null): ProjectRole | null {
-  if (orgRole === "org:owner") {
-    return "owner";
-  }
-
-  if (orgRole === "org:admin") {
+  if (orgRole === "org:owner" || orgRole === "org:admin") {
     return "admin";
   }
 

@@ -5,7 +5,7 @@ import { projectMembers, users } from "@/lib/db/schema";
 import { assertProjectRole } from "@/lib/server/project-permissions";
 
 export async function listAssignableProjectMembers(projectId: string, userId: string) {
-  await assertProjectRole(projectId, userId, ["owner", "admin", "member", "viewer"]);
+  await assertProjectRole(projectId, userId, ["admin", "member", "viewer"]);
 
   return db
     .select({

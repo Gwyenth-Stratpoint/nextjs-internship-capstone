@@ -258,7 +258,7 @@ async function getAccessibleList(listId: string, userId: string) {
 }
 
 export async function listProjectLists(projectId: string, userId: string) {
-  await assertProjectRole(projectId, userId, ["owner", "admin", "member", "viewer"]);
+  await assertProjectRole(projectId, userId, ["admin", "member", "viewer"]);
 
   await ensureProjectDefaultLists(projectId);
 
@@ -270,7 +270,7 @@ export async function listProjectLists(projectId: string, userId: string) {
 }
 
 export async function createProjectList(userId: string, input: CreateListInput) {
-  await assertProjectRole(input.projectId, userId, ["owner", "admin"]);
+  await assertProjectRole(input.projectId, userId, ["admin"]);
   const project = await getProjectScope(input.projectId);
   await assertUniqueTerminalCategory(input.projectId, input.category ?? "in_progress");
   const existingLists = await getProjectListRows(input.projectId);
@@ -322,7 +322,7 @@ export async function createProjectList(userId: string, input: CreateListInput) 
 
 export async function updateProjectList(listId: string, userId: string, input: UpdateListInput) {
   const existingList = await getAccessibleList(listId, userId);
-  await assertProjectRole(existingList.projectId, userId, ["owner", "admin"]);
+  await assertProjectRole(existingList.projectId, userId, ["admin"]);
   const nextCategory = input.category ?? existingList.category;
   await assertUniqueTerminalCategory(existingList.projectId, nextCategory, {
     excludeListId: listId,
@@ -422,7 +422,7 @@ export async function deleteProjectList(
   input: DeleteListInput = {},
 ) {
   const existingList = await getAccessibleList(listId, userId);
-  await assertProjectRole(existingList.projectId, userId, ["owner", "admin"]);
+  await assertProjectRole(existingList.projectId, userId, ["admin"]);
 
   if (existingList.category === "todo" || existingList.category === "done") {
     throw new Error(
@@ -548,7 +548,7 @@ export async function deleteProjectList(
 }
 
 export async function reorderProjectLists(userId: string, input: ReorderListsInput) {
-  await assertProjectRole(input.projectId, userId, ["owner", "admin"]);
+  await assertProjectRole(input.projectId, userId, ["admin"]);
   const project = await getProjectScope(input.projectId);
 
   const existingLists = await getProjectListRows(input.projectId);

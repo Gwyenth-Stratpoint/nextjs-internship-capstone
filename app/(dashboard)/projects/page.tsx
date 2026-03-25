@@ -135,7 +135,7 @@ export default function ProjectsPage() {
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filteredProjects.map((project) => {
-          const canManageProject = project.role === "owner" || project.role === "admin";
+          const canManageProject = project.role === "admin";
 
           return (
             <ProjectCard

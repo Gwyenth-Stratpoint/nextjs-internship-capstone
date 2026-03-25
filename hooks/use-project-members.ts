@@ -9,14 +9,14 @@ type ProjectMemberRecord = {
   email: string;
   name: string | null;
   avatarUrl: string | null;
-  role: "owner" | "admin" | "member" | "viewer";
+  role: "admin" | "member" | "viewer";
   joinedAt: string;
 };
 
 type ProjectInvitationRecord = {
   id: string;
   email: string;
-  role: "owner" | "admin" | "member" | "viewer";
+  role: "admin" | "member" | "viewer";
   workspaceRoleKey: "org:admin" | "org:member";
   status: "pending" | "accepted" | "revoked";
   createdAt: string;
@@ -111,7 +111,7 @@ export function useProjectMembers(projectId: string, enabled = true) {
   const inviteMember = useCallback(
     async (input: {
       email: string;
-      role: "owner" | "admin" | "member" | "viewer";
+      role: "admin" | "member" | "viewer";
       workspaceRoleKey: "org:admin" | "org:member";
     }) => {
       const result = await inviteProjectMemberAction({

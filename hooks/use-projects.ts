@@ -20,7 +20,7 @@ type ProjectFromApi = {
   createdAt: string;
   updatedAt: string;
   archived: boolean;
-  role: "owner" | "admin" | "member" | "viewer";
+  role: "admin" | "member" | "viewer";
 };
 
 type ApiSuccess<T> = {

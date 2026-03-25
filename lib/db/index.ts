@@ -13,9 +13,7 @@ if (!process.env.DATABASE_URL) {
 const sql = neon(process.env.DATABASE_URL);
 export const db = drizzle(sql, { schema });
 
-// --------------------
 // App-layer membership guards (you chose this approach)
-// --------------------
 async function assertWorkspaceMember(workspaceId: string, userId: string) {
   const rows = await db
     .select({ userId: workspaceMembers.userId })
@@ -46,9 +44,7 @@ async function assertAssigneeIsProjectMember(projectId: string, assigneeId: stri
   if (!rows.length) throw new Error("Assignee must be a member of the project");
 }
 
-// --------------------
 // Queries (kept intentionally small)
-// --------------------
 export const queries = {
   projects: {
     getAllByWorkspace: async (workspaceId: string, actingUserId: string) => {
@@ -71,7 +67,7 @@ export const queries = {
       name: string;
       description?: string | null;
       dueDate?: Date | null;
-      createdById: string; // acting user
+      createdById: string; 
     }) => {
       await assertWorkspaceMember(data.workspaceId, data.createdById);
 
@@ -89,11 +85,10 @@ export const queries = {
       if (!proj) throw new Error("Failed to create project");
 
       try {
-        // role-only ownership
         await db.insert(projectMembers).values({
           projectId: proj.id,
           userId: data.createdById,
-          role: "owner",
+          role: "admin",
         });
       } catch (error) {
         await db.delete(projects).where(eq(projects.id, proj.id));
@@ -209,7 +204,6 @@ export const queries = {
 
   comments: {
     getByTask: async (taskId: string, projectId: string, actingUserId: string) => {
-      // you pass projectId in so we don't have to fetch task->project here
       await assertProjectMember(projectId, actingUserId);
       return db
         .select()

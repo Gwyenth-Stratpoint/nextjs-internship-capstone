@@ -14,7 +14,7 @@ type Project = {
   id: string;
   name: string;
   description: string | null;
-  role: "owner" | "admin" | "member" | "viewer";
+  role: "admin" | "member" | "viewer";
 };
 
 type ApiResponse<T> =

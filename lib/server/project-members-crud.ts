@@ -6,7 +6,7 @@ import { projectInvitations, projectMembers, projects, users, workspaces } from 
 import { recordActivity } from "@/lib/server/activity-crud";
 import { assertProjectRole } from "@/lib/server/project-permissions";
 
-type ProjectRole = "owner" | "admin" | "member" | "viewer";
+type ProjectRole = "admin" | "member" | "viewer";
 type WorkspaceRoleKey = "org:admin" | "org:member";
 
 type ClerkOrganizationMember = {
@@ -165,7 +165,7 @@ async function upsertProjectMember(projectId: string, userId: string, role: Proj
 }
 
 export async function getProjectMembersSnapshot(projectId: string, userId: string) {
-  await assertProjectRole(projectId, userId, ["owner", "admin"]);
+  await assertProjectRole(projectId, userId, ["admin"]);
   const project = await getProjectScope(projectId);
 
   const [members, invitations] = await Promise.all([
@@ -217,7 +217,7 @@ export async function inviteProjectMember(input: {
   role: ProjectRole;
   workspaceRoleKey: WorkspaceRoleKey;
 }) {
-  await assertProjectRole(input.projectId, input.inviterUserId, ["owner", "admin"]);
+  await assertProjectRole(input.projectId, input.inviterUserId, ["admin"]);
   const project = await getProjectScope(input.projectId);
   const normalizedEmail = normalizeEmail(input.email);
   const client = await clerkClient();

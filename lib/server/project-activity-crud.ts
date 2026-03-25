@@ -12,7 +12,7 @@ export type ProjectActivityItem = {
 };
 
 export async function listProjectActivity(projectId: string, userId: string) {
-  await assertProjectRole(projectId, userId, ["owner", "admin", "member", "viewer"]);
+  await assertProjectRole(projectId, userId, ["admin", "member", "viewer"]);
 
   const rows = await db
     .select({

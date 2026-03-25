@@ -339,7 +339,7 @@ async function getAccessibleTask(taskId: string, userId: string) {
 }
 
 export async function listProjectTasks(projectId: string, userId: string) {
-  await assertProjectRole(projectId, userId, ["owner", "admin", "member", "viewer"]);
+  await assertProjectRole(projectId, userId, ["admin", "member", "viewer"]);
 
   const rows = await buildTaskRecordsQuery()
     .where(eq(tasks.projectId, projectId))
@@ -349,7 +349,7 @@ export async function listProjectTasks(projectId: string, userId: string) {
 }
 
 export async function createProjectTask(userId: string, input: CreateTaskInput) {
-  await assertProjectRole(input.projectId, userId, ["owner", "admin", "member"]);
+  await assertProjectRole(input.projectId, userId, ["admin", "member"]);
   const project = await getProjectScope(input.projectId);
 
   if (input.listId) {
@@ -413,7 +413,7 @@ export async function createProjectTask(userId: string, input: CreateTaskInput) 
 
 export async function updateProjectTask(taskId: string, userId: string, input: UpdateTaskInput) {
   const existingTask = await getAccessibleTask(taskId, userId);
-  await assertProjectRole(existingTask.projectId, userId, ["owner", "admin", "member"]);
+  await assertProjectRole(existingTask.projectId, userId, ["admin", "member"]);
   const { labels: nextLabelInput, ...taskUpdateValues } = input;
 
   const nextListId =
@@ -615,7 +615,7 @@ export async function updateProjectTask(taskId: string, userId: string, input: U
 
 export async function deleteProjectTask(taskId: string, userId: string) {
   const task = await getAccessibleTask(taskId, userId);
-  await assertProjectRole(task.projectId, userId, ["owner", "admin", "member"]);
+  await assertProjectRole(task.projectId, userId, ["admin", "member"]);
 
   const [deletedTask] = await db.delete(tasks).where(eq(tasks.id, taskId)).returning();
 
@@ -643,7 +643,7 @@ export async function deleteProjectTask(taskId: string, userId: string) {
 }
 
 export async function reorderProjectTasks(userId: string, input: ReorderTasksInput) {
-  await assertProjectRole(input.projectId, userId, ["owner", "admin", "member"]);
+  await assertProjectRole(input.projectId, userId, ["admin", "member"]);
   const project = await getProjectScope(input.projectId);
 
   if (input.listId) {
