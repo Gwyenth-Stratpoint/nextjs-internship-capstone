@@ -1,4 +1,3 @@
-// TODO: Task 2.2 - Configure authentication middleware for route protection DONE
 
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";

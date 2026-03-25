@@ -1,6 +1,7 @@
 "use client";
 
-import { Calendar, MoreHorizontal, Plus, Settings, Users } from "lucide-react";
+import Link from "next/link";
+import { Calendar, History, Plus, Settings, Users } from "lucide-react";
 import { use, useCallback, useEffect, useState } from "react";
 
 import { KanbanBoard } from "@/components/kanban-board";
@@ -134,9 +135,12 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
               <button className="rounded-lg p-2 transition-colors hover:bg-muted">
                 <Settings size={20} />
               </button>
-              <button className="rounded-lg p-2 transition-colors hover:bg-muted">
-                <MoreHorizontal size={20} />
-              </button>
+              <Link
+                href={`/projects/${id}/history`}
+                className="rounded-lg p-2 transition-colors hover:bg-muted"
+              >
+                <History size={20} />
+              </Link>
             </div>
           </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ChangeEvent, Dispatch, FormEvent, ReactNode, SetStateAction } from "react";
+import type { Dispatch, FormEvent, ReactNode, SetStateAction } from "react";
 import { useMemo, useState } from "react";
 import {
   CalendarDays,
@@ -8,11 +8,11 @@ import {
   Flag,
   Layers3,
   MessageSquareText,
-  Paperclip,
   UserRound,
 } from "lucide-react";
 import { z } from "zod";
 
+import { ActivityFeed } from "@/components/activity-feed";
 import {
   ModalBackdrop,
   CenteredModalSurface,
@@ -72,7 +72,7 @@ type CreateTaskModalProps = {
   isCommentSubmitting?: boolean;
   isSubmitting?: boolean;
   onClose: () => void;
-  onSubmit: (input: TaskDraft & { attachments: File[] }) => Promise<void>;
+  onSubmit: (input: TaskDraft) => Promise<void>;
   onDelete?: () => Promise<void> | void;
   onCreateComment?: (content: string) => Promise<void>;
 };
@@ -155,14 +155,6 @@ function getPriorityChipClass(priority: TaskPriority) {
     default:
       return "bg-slate-100 text-slate-700";
   }
-}
-
-function formatTimelineDate(value: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value));
 }
 
 function TaskChip({ children, tone }: { children: ReactNode; tone: string }) {
@@ -429,9 +421,7 @@ function CreateTaskForm({
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
       {assigneeOptions.length === 0 ? (
-        <p className="text-xs text-slate-500">
-          Project member options are not wired yet, so assignment stays optional.
-        </p>
+        <p className="text-xs text-slate-500">No project members are available to assign yet.</p>
       ) : null}
     </div>
   );
@@ -462,48 +452,6 @@ function PriorityEditor({
         </select>
       </div>
       <TaskChip tone={getPriorityChipClass(priority)}>{priority}</TaskChip>
-    </div>
-  );
-}
-
-function AttachmentsSection({
-  attachments,
-  onChange,
-}: {
-  attachments: File[];
-  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
-}) {
-  return (
-    <div className="space-y-2">
-      <SectionLabel>Attachments</SectionLabel>
-      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3.5">
-        <div className="flex items-center gap-3 text-sm text-slate-600">
-          <Paperclip size={18} className="text-slate-400" />
-          Attach supporting files for this task.
-        </div>
-        <input
-          type="file"
-          multiple
-          onChange={onChange}
-          className="mt-3 block w-full text-sm text-slate-600 file:mr-3 file:rounded-xl file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-blue-700"
-        />
-        {attachments.length > 0 ? (
-          <div className="mt-2.5 space-y-2">
-            {attachments.map((file) => (
-              <div
-                key={`${file.name}-${file.lastModified}`}
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600"
-              >
-                {file.name}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="mt-3 text-xs text-slate-500">
-            Upload handling still needs storage integration before files can persist.
-          </p>
-        )}
-      </div>
     </div>
   );
 }
@@ -589,7 +537,11 @@ function EditPanels({
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-sm font-medium text-slate-900">{comment.authorName}</p>
                     <span className="text-xs text-slate-500">
-                      {formatTimelineDate(comment.createdAt)}
+                      {new Intl.DateTimeFormat("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      }).format(new Date(comment.createdAt))}
                     </span>
                   </div>
                   <p className="mt-1 text-sm text-slate-600">{comment.content}</p>
@@ -605,21 +557,10 @@ function EditPanels({
       ) : (
         <div className="space-y-2.5 rounded-xl border border-slate-200 bg-slate-50 p-3.5">
           {activityItems.length > 0 ? (
-            activityItems.map((entry) => (
-              <div
-                key={entry.id}
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2.5"
-              >
-                <p className="text-sm text-slate-700">{entry.description}</p>
-                <span className="mt-1 block text-xs text-slate-500">
-                  {formatTimelineDate(entry.createdAt)}
-                </span>
-              </div>
-            ))
+            <ActivityFeed items={activityItems} />
           ) : (
-            <p className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-500">
-              Activity history will appear here once task timeline events are exposed by the
-              backend.
+            <p className="text-sm text-slate-500">
+              No activity has been recorded for this task yet.
             </p>
           )}
         </div>
@@ -651,7 +592,6 @@ export function CreateTaskModal({
   const [commentError, setCommentError] = useState<string | null>(null);
   const [commentDraft, setCommentDraft] = useState("");
   const [labelInput, setLabelInput] = useState("");
-  const [attachments, setAttachments] = useState<File[]>([]);
   const [activePanel, setActivePanel] = useState<"comments" | "activity">("comments");
   const [isEditing, setIsEditing] = useState(mode === "create");
 
@@ -681,10 +621,6 @@ export function CreateTaskModal({
       ...current,
       labels: current.labels.filter((label) => label !== targetLabel),
     }));
-  }
-
-  function handleAttachmentSelection(event: ChangeEvent<HTMLInputElement>) {
-    setAttachments(Array.from(event.target.files ?? []));
   }
 
   async function handleCreateComment() {
@@ -734,7 +670,6 @@ export function CreateTaskModal({
         assigneeId: parsed.data.assigneeId || null,
         dueDate: parsed.data.dueDate || null,
         labels: parsed.data.labels,
-        attachments,
       });
       onClose();
     } catch (err) {
@@ -893,14 +828,24 @@ export function CreateTaskModal({
 
             <div className="space-y-1.5">
               <SectionLabel>Labels</SectionLabel>
-              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
-                Use labels for tags like `design`, `qa`, or `backend`. They appear in the summary
-                area above.
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                {form.labels.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {form.labels.map((label) => (
+                      <span
+                        key={label}
+                        className="inline-flex items-center rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700"
+                      >
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-500">
+                    Use labels for tags like `design`, `qa`, or `backend`.
+                  </p>
+                )}
               </div>
-            </div>
-
-            <div className={!isEditing ? "pointer-events-none opacity-80" : ""}>
-              <AttachmentsSection attachments={attachments} onChange={handleAttachmentSelection} />
             </div>
 
             {mode === "edit" ? (
@@ -921,7 +866,7 @@ export function CreateTaskModal({
             {error ? <p className="text-sm text-red-600">{error}</p> : null}
             {assigneeOptions.length === 0 ? (
               <p className="text-xs text-slate-500">
-                Project member options are not wired yet, so assignment stays optional.
+                No project members are available to assign yet.
               </p>
             ) : null}
           </div>
@@ -929,7 +874,7 @@ export function CreateTaskModal({
           <div className="px-5 py-4">
             {isEditing ? (
               <ModalFooter
-                hint="Assignee saves today. Labels, attachments, comments, and timeline need backend wiring to persist fully."
+                hint="Comments, labels, assignees, and activity all save directly to this task."
                 submitLabel={isSubmitting ? "Saving..." : "Save changes"}
                 isSubmitting={isSubmitting}
                 onClose={onClose}

@@ -11,6 +11,7 @@ import { TaskCard } from "@/components/task-card";
 import { CardInset } from "@/components/ui/card";
 import { useComments } from "@/hooks/use-comments";
 import { useLists } from "@/hooks/use-lists";
+import { useProjectAssignees } from "@/hooks/use-project-assignees";
 import { useTasks } from "@/hooks/use-tasks";
 import { useBoardStore } from "@/stores/board-store";
 
@@ -179,6 +180,8 @@ export function KanbanBoard({
   onCreateListActionChange,
   onProgressChange,
 }: KanbanBoardProps) {
+  const canManageLists = role === "owner" || role === "admin";
+  const canManageTasks = canManageLists || role === "member";
   const categoryMeta: Record<
     "todo" | "in_progress" | "done",
     {
@@ -236,6 +239,7 @@ export function KanbanBoard({
     refetchTasks,
     isMutating: isTasksMutating,
   } = useTasks(projectId);
+  const { assignees } = useProjectAssignees(projectId, canManageTasks);
 
   const modalState = useBoardStore((state) => state.taskModalState as ModalState);
   const isCreateListOpen = useBoardStore((state) => state.isCreateListOpen);
@@ -485,7 +489,6 @@ export function KanbanBoard({
     assigneeId?: string | null;
     dueDate?: string | null;
     labels: string[];
-    attachments: File[];
   }) {
     if (!modalState) return;
 
@@ -498,6 +501,7 @@ export function KanbanBoard({
         priority: input.priority,
         assigneeId: input.assigneeId ?? null,
         dueDate: input.dueDate ?? null,
+        labels: input.labels,
         listId: modalState.listId,
         position: listTaskCount,
       });
@@ -512,6 +516,7 @@ export function KanbanBoard({
       priority: input.priority,
       assigneeId: input.assigneeId ?? null,
       dueDate: input.dueDate ?? null,
+      labels: input.labels,
     });
     closeTaskModal();
   }
@@ -524,8 +529,6 @@ export function KanbanBoard({
   const boardError = listsError ?? tasksError;
   const isLoading = isListsLoading || isTasksLoading;
   const isMutating = isListsMutating || isTasksMutating;
-  const canManageLists = role === "owner" || role === "admin";
-  const canManageTasks = canManageLists || role === "member";
   const columnMinWidth = 208;
   const boardMinWidth =
     activeLists.length > 0
@@ -724,7 +727,7 @@ export function KanbanBoard({
                                     priority: task.priority,
                                     assigneeId: task.assigneeId,
                                     dueDate: task.dueDate,
-                                    labels: [],
+                                    labels: task.labels ?? [],
                                   },
                                 })
                             : undefined
@@ -758,7 +761,11 @@ export function KanbanBoard({
               }
             : null
         }
-        assigneeOptions={[]}
+        assigneeOptions={assignees.map((assignee) => ({
+          id: assignee.id,
+          name: assignee.name ?? assignee.email,
+          subtitle: assignee.role,
+        }))}
         comments={comments.map((comment) => ({
           id: comment.id,
           authorName: comment.authorName ?? "Unknown user",

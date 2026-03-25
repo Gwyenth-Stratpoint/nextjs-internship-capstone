@@ -109,6 +109,7 @@ export const taskSchema = z.object({
 
   dueDate: z.coerce.date().nullable().optional(),
   startDate: z.coerce.date().nullable().optional(),
+  labels: z.array(z.string().trim().min(1).max(24)).max(8).optional(),
 
   position: z.number().int().min(0).optional(),
 });
@@ -123,6 +124,7 @@ export const taskUpdateSchema = z
     reporterId: uuid.nullable().optional(),
     dueDate: z.coerce.date().nullable().optional(),
     startDate: z.coerce.date().nullable().optional(),
+    labels: z.array(z.string().trim().min(1).max(24)).max(8).optional(),
     listId: uuid.nullable().optional(),
     position: z.number().int().min(0).optional(),
     archived: z.boolean().optional(),

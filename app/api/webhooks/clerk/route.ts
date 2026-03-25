@@ -75,7 +75,6 @@ export async function POST(req: Request) {
   const secret = process.env.CLERK_WEBHOOK_SECRET;
   if (!secret) return new Response("Missing CLERK_WEBHOOK_SECRET", { status: 500 });
 
-  // IMPORTANT: use raw body for signature verification
   const payload = await req.text();
   const h = await headers();
 
@@ -106,7 +105,6 @@ export async function POST(req: Request) {
       const name = [data.first_name, data.last_name].filter(Boolean).join(" ") || null;
       const avatarUrl = data.image_url ?? null;
 
-      // Upsert (simple version: select then insert/update)
       const existing = await db.select().from(users).where(eq(users.clerkId, clerkId)).limit(1);
 
       if (!existing.length) {

@@ -1,109 +1,195 @@
-import { User, Bell, Shield, Palette } from "lucide-react";
-import { currentUser } from "@clerk/nextjs/server";
+import Link from "next/link";
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { Bell, Building2, Palette, Shield, User, Users } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { ThemeToggle } from "@/components/theme-toggle";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardInset,
+  CardTitle,
+} from "@/components/ui/card";
+import { getActiveClerkOrgId, requireDbUserId } from "@/lib/auth";
+import { listAccessibleProjects } from "@/lib/server/project-crud";
+import { getOrganizationTeamSnapshot } from "@/lib/server/team-crud";
+
+function formatWorkspaceRole(value: string | null | undefined) {
+  if (!value) {
+    return "No active workspace";
+  }
+
+  return value.replace("org:", "").replace("_", " ");
+}
 
 export default async function SettingsPage() {
   const user = await currentUser();
+  const { orgRole } = await auth();
+  const clerkOrgId = await getActiveClerkOrgId();
+  const dbUserId = await requireDbUserId();
 
-  const fullName = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim();
-  const email = user?.emailAddresses?.[0]?.emailAddress ?? "";
+  const [teamSnapshot, accessibleProjects] = clerkOrgId
+    ? await Promise.all([
+        getOrganizationTeamSnapshot(clerkOrgId),
+        listAccessibleProjects(dbUserId, clerkOrgId),
+      ])
+    : [null, []];
+
+  const fullName = `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || "Workspace user";
+  const email = user?.emailAddresses?.[0]?.emailAddress ?? "No email available";
+  const activeProjectCount = accessibleProjects.filter((project) => !project.archived).length;
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground">Settings</h1>
-        <p className="text-muted-foreground mt-2">
-          Manage your account and application preferences
+        <p className="mt-2 text-muted-foreground">
+          Review your account, workspace access, and personal preferences.
         </p>
       </div>
 
-      {/* Implementation Tasks Banner */}
-      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-2">
-          ⚙️ Settings Implementation Tasks
-        </h3>
-        <ul className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
-          <li>• Task 2.4: Implement user session management</li>
-          <li>• Task 6.4: Implement project member management and permissions</li>
-        </ul>
-      </div>
-
-      {/* Settings Sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Settings Navigation */}
-        <Card>
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+        <Card variant="panel">
           <CardHeader>
-            <CardTitle>Settings</CardTitle>
+            <CardTitle>Account Snapshot</CardTitle>
+            <CardDescription>
+              Live profile details from Clerk and your current workspace.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="pt-0">
-            <nav className="space-y-2">
-              {[
-                { name: "Profile", icon: User, active: true },
-                { name: "Notifications", icon: Bell, active: false },
-                { name: "Security", icon: Shield, active: false },
-                { name: "Appearance", icon: Palette, active: false },
-              ].map((item) => (
-                <button
-                  key={item.name}
-                  className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    item.active
-                      ? "bg-primary/15 dark:bg-primary/25 text-primary"
-                      : "text-foreground hover:bg-muted"
-                  }`}
-                >
-                  <item.icon className="mr-3" size={16} />
-                  {item.name}
-                </button>
-              ))}
-            </nav>
+          <CardContent className="grid gap-4 md:grid-cols-2">
+            <CardInset className="p-4">
+              <div className="mb-3 flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/12 text-primary">
+                  <User size={20} />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Signed in as</p>
+                  <p className="font-semibold text-foreground">{fullName}</p>
+                </div>
+              </div>
+              <div className="space-y-1 text-sm text-slate-600">
+                <p>{email}</p>
+                <p>Clerk user id: {user?.id ?? "Unavailable"}</p>
+              </div>
+            </CardInset>
+
+            <CardInset className="p-4">
+              <div className="mb-3 flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
+                  <Building2 size={20} />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Active workspace</p>
+                  <p className="font-semibold text-foreground">
+                    {teamSnapshot?.workspace.organizationName ?? "No workspace selected"}
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-1 text-sm text-slate-600">
+                <p>Role: {formatWorkspaceRole(orgRole)}</p>
+                <p>Active projects: {activeProjectCount}</p>
+                <p>Pending invites: {teamSnapshot?.invitations.length ?? 0}</p>
+              </div>
+            </CardInset>
           </CardContent>
         </Card>
 
-        {/* Settings Content */}
-        <Card className="lg:col-span-2">
+        <Card variant="panel">
           <CardHeader>
-            <CardTitle>Profile Settings</CardTitle>
+            <CardTitle>Appearance</CardTitle>
+            <CardDescription>
+              Personal UI preferences for your current browser session.
+            </CardDescription>
           </CardHeader>
+          <CardContent>
+            <CardInset className="flex items-center justify-between gap-4 p-4">
+              <div>
+                <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <Palette size={16} className="text-primary" />
+                  Theme
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Toggle between light and dark modes without leaving the dashboard.
+                </p>
+              </div>
+              <ThemeToggle />
+            </CardInset>
+          </CardContent>
+        </Card>
+      </div>
 
-          <CardContent className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Full Name</label>
-              <Input
-                type="text"
-                defaultValue={fullName}
-                className="border-border bg-card text-foreground"
-              />
-            </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Card variant="panel">
+          <CardHeader>
+            <CardTitle>Workspace Access</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CardInset className="space-y-3 p-4">
+              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <Users size={16} className="text-primary" />
+                Team visibility
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {teamSnapshot
+                  ? `${teamSnapshot.members.length} workspace members can collaborate in this organization.`
+                  : "Select a workspace to review team membership."}
+              </p>
+              <Link href="/team" className="text-sm font-medium text-primary hover:underline">
+                Manage members
+              </Link>
+            </CardInset>
+          </CardContent>
+        </Card>
 
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Email Address
-              </label>
-              <Input
-                type="email"
-                defaultValue={email}
-                className="border-border bg-card text-foreground"
-              />
-            </div>
+        <Card variant="panel">
+          <CardHeader>
+            <CardTitle>Notifications</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CardInset className="space-y-3 p-4">
+              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <Bell size={16} className="text-primary" />
+                Current behavior
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Workspace invites are sent through Clerk. Project history and task activity stay
+                visible inside the app.
+              </p>
+              <Link href="/analytics" className="text-sm font-medium text-primary hover:underline">
+                Review live analytics
+              </Link>
+            </CardInset>
+          </CardContent>
+        </Card>
 
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Role</label>
-              <select className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
-                <option>Project Manager</option>
-                <option>Developer</option>
-                <option>Designer</option>
-                <option>QA Engineer</option>
-              </select>
-            </div>
-
-            <div className="flex justify-end space-x-3 pt-4">
-              <Button variant="ghost" className="rounded-lg text-muted-foreground hover:bg-muted">
-                Cancel
-              </Button>
-              <Button className="rounded-lg">Save Changes</Button>
-            </div>
+        <Card variant="panel">
+          <CardHeader>
+            <CardTitle>Security and Audit</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CardInset className="space-y-3 p-4">
+              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <Shield size={16} className="text-primary" />
+                Activity logging
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Task changes, list changes, comments, invites, and project member updates are all
+                captured in the audit trail.
+              </p>
+              {accessibleProjects[0] ? (
+                <Link
+                  href={`/projects/${accessibleProjects[0].id}/history`}
+                  className="text-sm font-medium text-primary hover:underline"
+                >
+                  Open a project history feed
+                </Link>
+              ) : (
+                <span className="text-sm text-muted-foreground">
+                  Create a project to view history.
+                </span>
+              )}
+            </CardInset>
           </CardContent>
         </Card>
       </div>

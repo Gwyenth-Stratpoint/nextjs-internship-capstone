@@ -1,16 +1,28 @@
 import Link from "next/link";
-import { ArrowRight, CheckCircle, Users, Kanban } from "lucide-react";
+import { ArrowRight, CheckCircle, Shield, Users, Kanban } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
-const roadmap = [
-  { phase: "1.0", title: "Project Setup", status: "pending", tasks: 6 },
-  { phase: "2.0", title: "Authentication", status: "pending", tasks: 6 },
-  { phase: "3.0", title: "Database Setup", status: "pending", tasks: 6 },
-  { phase: "4.0", title: "Core Features", status: "pending", tasks: 6 },
-  { phase: "5.0", title: "Kanban Board", status: "pending", tasks: 6 },
-  { phase: "6.0", title: "Advanced Features", status: "pending", tasks: 6 },
-  { phase: "7.0", title: "Testing", status: "pending", tasks: 6 },
-  { phase: "8.0", title: "Deployment", status: "pending", tasks: 6 },
+const productHighlights = [
+  {
+    title: "Workspace and Authentication",
+    description: "Clerk powers secure sign-in, organizations, and member invitations.",
+    state: "Live now",
+  },
+  {
+    title: "Project and Kanban Flow",
+    description: "Projects, lists, tasks, drag-and-drop workflows, and audit logging are active.",
+    state: "Live now",
+  },
+  {
+    title: "Team and Permissions",
+    description: "Workspace membership and project-level access can be managed separately.",
+    state: "Live now",
+  },
+  {
+    title: "Analytics and Activity",
+    description: "Scoped analytics, comments, and project history update automatically in-app.",
+    state: "Live now",
+  },
 ];
 
 export default function HomePage() {
@@ -97,9 +109,9 @@ export default function HomePage() {
 
       <section className="relative z-10 px-4 py-16 sm:px-6 lg:px-8">
         <div className="container mx-auto text-center">
-          <h2 className="mb-8 text-3xl font-bold text-foreground">Navigate the Mock Site</h2>
+          <h2 className="mb-8 text-3xl font-bold text-foreground">Explore the App</h2>
           <p className="mb-8 text-lg text-muted-foreground">
-            All pages are accessible without authentication for development purposes
+            Jump straight into the core screens used to manage work, teammates, and project health.
           </p>
 
           <div className="mx-auto grid max-w-4xl grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -131,8 +143,8 @@ export default function HomePage() {
               href="/sign-in"
               className="glass-card rounded-3xl p-4 text-left transition hover:shadow-lg"
             >
-              <h3 className="mb-2 font-semibold text-foreground">Auth Pages</h3>
-              <p className="text-sm text-muted-foreground">Sign in/up placeholders</p>
+              <h3 className="mb-2 font-semibold text-foreground">Account Access</h3>
+              <p className="text-sm text-muted-foreground">Sign in or create a workspace account</p>
             </Link>
           </div>
         </div>
@@ -141,19 +153,18 @@ export default function HomePage() {
       <section className="relative z-10 px-4 py-16 sm:px-6 lg:px-8">
         <div className="container mx-auto">
           <h2 className="mb-12 text-center text-3xl font-bold text-foreground">
-            Implementation Roadmap
+            Core Capabilities
           </h2>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {roadmap.map((item) => (
-              <div key={item.phase} className="glass-card rounded-3xl p-6">
-                <div className="mb-2 text-sm font-semibold text-primary">Phase {item.phase}</div>
-                <h3 className="mb-2 font-semibold text-foreground">{item.title}</h3>
-                <div className="mb-3 text-sm text-muted-foreground">{item.tasks} tasks</div>
-                <div className="flex items-center">
-                  <div className="mr-2 h-2 w-2 rounded-full bg-yellow-500" />
-                  <span className="text-sm capitalize text-muted-foreground">{item.status}</span>
+            {productHighlights.map((item) => (
+              <div key={item.title} className="glass-card rounded-3xl p-6">
+                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-primary">
+                  <Shield size={14} />
+                  {item.state}
                 </div>
+                <h3 className="mb-2 font-semibold text-foreground">{item.title}</h3>
+                <p className="text-sm text-muted-foreground">{item.description}</p>
               </div>
             ))}
           </div>

@@ -1,4 +1,4 @@
-import { Kanban, Users, Calendar, BarChart3, Shield, Zap } from "lucide-react";
+import { BarChart3, CheckCheck, Kanban, Shield, Users, Zap } from "lucide-react";
 
 const features = [
   {
@@ -13,10 +13,10 @@ const features = [
     description: "Work together seamlessly with real-time updates, comments, and task assignments.",
   },
   {
-    icon: Calendar,
-    title: "Timeline Management",
+    icon: CheckCheck,
+    title: "Task Activity",
     description:
-      "Track deadlines and milestones with integrated calendar views and due date reminders.",
+      "Track comments, audit history, assignees, labels, and status changes from a single flow.",
   },
   {
     icon: BarChart3,

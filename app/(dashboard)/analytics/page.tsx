@@ -131,24 +131,20 @@ export default function AnalyticsPage() {
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-5">
         {metrics.map((metric) => (
-          <Card key={metric.title} variant="panel">
-            <CardContent className="p-5">
-              <CardInset className="rounded-[20px] px-4 py-4">
-                <div className="mb-4 flex items-center justify-between">
-                  <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-xl ${metric.colorClass}`}
-                  >
-                    <metric.icon size={18} />
-                  </div>
-                </div>
-                <p className="text-[1.7rem] font-semibold text-slate-900">
-                  {isLoading && !overview ? "--" : metric.value}
-                </p>
-                <p className="mt-1 text-sm font-medium text-slate-900">{metric.title}</p>
-                <p className="mt-1 text-sm text-slate-500">{metric.helper}</p>
-              </CardInset>
-            </CardContent>
-          </Card>
+          <CardInset key={metric.title} className="rounded-[20px] px-4 py-4">
+            <div className="mb-4 flex items-center justify-between">
+              <div
+                className={`flex h-10 w-10 items-center justify-center rounded-xl ${metric.colorClass}`}
+              >
+                <metric.icon size={18} />
+              </div>
+            </div>
+            <p className="text-[1.7rem] font-semibold text-slate-900">
+              {isLoading && !overview ? "--" : metric.value}
+            </p>
+            <p className="mt-1 text-sm font-medium text-slate-900">{metric.title}</p>
+            <p className="mt-1 text-sm text-slate-500">{metric.helper}</p>
+          </CardInset>
         ))}
       </div>
 

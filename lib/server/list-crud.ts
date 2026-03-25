@@ -1,7 +1,8 @@
 import { and, asc, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { activity, lists, projects, tasks } from "@/lib/db/schema";
+import { lists, projects, tasks } from "@/lib/db/schema";
+import { recordActivities, recordActivity } from "@/lib/server/activity-crud";
 import { assertProjectRole, getProjectMembership } from "@/lib/server/project-permissions";
 
 type CreateListInput = {
@@ -96,6 +97,59 @@ function mapListCategoryToTaskStatus(category: "todo" | "in_progress" | "done") 
     default:
       return "in_progress" as const;
   }
+}
+
+async function getProjectScope(projectId: string) {
+  const [project] = await db
+    .select({
+      id: projects.id,
+      workspaceId: projects.workspaceId,
+      name: projects.name,
+    })
+    .from(projects)
+    .where(eq(projects.id, projectId))
+    .limit(1);
+
+  if (!project) {
+    throw new Error("NotFound");
+  }
+
+  return project;
+}
+
+function buildListChangeMeta(
+  previous: {
+    name: string;
+    category: "todo" | "in_progress" | "done";
+    archived: boolean;
+    position: number;
+  },
+  next: {
+    name: string;
+    category: "todo" | "in_progress" | "done";
+    archived: boolean;
+    position: number;
+  },
+) {
+  const changes: Array<Record<string, unknown>> = [];
+
+  if (previous.name !== next.name) {
+    changes.push({ field: "name", from: previous.name, to: next.name });
+  }
+
+  if (previous.category !== next.category) {
+    changes.push({ field: "category", from: previous.category, to: next.category });
+  }
+
+  if (previous.archived !== next.archived) {
+    changes.push({ field: "archived", from: previous.archived, to: next.archived });
+  }
+
+  if (previous.position !== next.position) {
+    changes.push({ field: "position", from: previous.position, to: next.position });
+  }
+
+  return changes;
 }
 
 async function getProjectListRows(projectId: string) {
@@ -217,6 +271,7 @@ export async function listProjectLists(projectId: string, userId: string) {
 
 export async function createProjectList(userId: string, input: CreateListInput) {
   await assertProjectRole(input.projectId, userId, ["owner", "admin"]);
+  const project = await getProjectScope(input.projectId);
   await assertUniqueTerminalCategory(input.projectId, input.category ?? "in_progress");
   const existingLists = await getProjectListRows(input.projectId);
   const targetPosition = clampPosition(
@@ -247,6 +302,20 @@ export async function createProjectList(userId: string, input: CreateListInput) 
   if (!createdList) {
     throw new Error("Failed to create list");
   }
+
+  await recordActivity({
+    workspaceId: project.workspaceId,
+    projectId: project.id,
+    actorId: userId,
+    action: "created",
+    meta: {
+      entityType: "list",
+      listId: createdList.id,
+      listName: createdList.name,
+      category: createdList.category,
+      summary: `created list "${createdList.name}"`,
+    },
+  });
 
   return createdList;
 }
@@ -290,6 +359,20 @@ export async function updateProjectList(listId: string, userId: string, input: U
       throw new Error("NotFound");
     }
 
+    await recordActivity({
+      workspaceId: existingList.workspaceId,
+      projectId: existingList.projectId,
+      actorId: userId,
+      action: "updated",
+      meta: {
+        entityType: "list",
+        listId: normalizedList.id,
+        listName: normalizedList.name,
+        changes: buildListChangeMeta(existingList, normalizedList),
+        summary: `updated list "${normalizedList.name}"`,
+      },
+    });
+
     return normalizedList;
   }
 
@@ -311,6 +394,24 @@ export async function updateProjectList(listId: string, userId: string, input: U
   if (!normalizedList) {
     throw new Error("NotFound");
   }
+
+  const archiveChanged = existingList.archived !== normalizedList.archived;
+
+  await recordActivity({
+    workspaceId: existingList.workspaceId,
+    projectId: existingList.projectId,
+    actorId: userId,
+    action: archiveChanged ? (normalizedList.archived ? "archived" : "unarchived") : "updated",
+    meta: {
+      entityType: "list",
+      listId: normalizedList.id,
+      listName: normalizedList.name,
+      changes: buildListChangeMeta(existingList, normalizedList),
+      summary: archiveChanged
+        ? `${normalizedList.archived ? "archived" : "restored"} list "${normalizedList.name}"`
+        : `updated list "${normalizedList.name}"`,
+    },
+  });
 
   return normalizedList;
 }
@@ -394,7 +495,7 @@ export async function deleteProjectList(
         .where(eq(tasks.id, task.id));
     }
 
-    await db.insert(activity).values(
+    await recordActivities(
       listTasks.map((task) => ({
         workspaceId: existingList.workspaceId,
         projectId: existingList.projectId,
@@ -407,6 +508,7 @@ export async function deleteProjectList(
           destinationListId: destinationList.id,
           destinationListName: destinationList.name,
           reason: "list_deleted",
+          summary: `moved this task from ${existingList.name} to ${destinationList.name}`,
         },
       })),
     );
@@ -423,7 +525,7 @@ export async function deleteProjectList(
 
   await persistListOrder(existingList.projectId);
 
-  await db.insert(activity).values({
+  await recordActivity({
     workspaceId: existingList.workspaceId,
     projectId: existingList.projectId,
     actorId: userId,
@@ -435,6 +537,10 @@ export async function deleteProjectList(
       listName: existingList.name,
       movedTaskCount,
       destinationListName,
+      summary:
+        movedTaskCount > 0 && destinationListName
+          ? `deleted list "${existingList.name}" and moved ${movedTaskCount} task${movedTaskCount === 1 ? "" : "s"} to "${destinationListName}"`
+          : `deleted list "${existingList.name}"`,
     },
   });
 
@@ -443,6 +549,7 @@ export async function deleteProjectList(
 
 export async function reorderProjectLists(userId: string, input: ReorderListsInput) {
   await assertProjectRole(input.projectId, userId, ["owner", "admin"]);
+  const project = await getProjectScope(input.projectId);
 
   const existingLists = await getProjectListRows(input.projectId);
   const existingIds = existingLists.map((list) => list.id);
@@ -464,5 +571,18 @@ export async function reorderProjectLists(userId: string, input: ReorderListsInp
   }
 
   await persistListOrder(input.projectId, input.orderedListIds);
+  await recordActivity({
+    workspaceId: project.workspaceId,
+    projectId: project.id,
+    actorId: userId,
+    action: "updated",
+    meta: {
+      entityType: "list",
+      event: "reordered",
+      orderedListIds: input.orderedListIds,
+      summary: `reordered lists in project "${project.name}"`,
+    },
+  });
+
   return listProjectLists(input.projectId, userId);
 }

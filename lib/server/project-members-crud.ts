@@ -3,6 +3,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { projectInvitations, projectMembers, projects, users, workspaces } from "@/lib/db/schema";
+import { recordActivity } from "@/lib/server/activity-crud";
 import { assertProjectRole } from "@/lib/server/project-permissions";
 
 type ProjectRole = "owner" | "admin" | "member" | "viewer";
@@ -136,7 +137,11 @@ async function upsertProjectMember(projectId: string, userId: string, role: Proj
       .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId)))
       .returning();
 
-    return updatedMembership ?? existingMembership;
+    return {
+      membership: updatedMembership ?? existingMembership,
+      event: "updated" as const,
+      previousRole: existingMembership.role,
+    };
   }
 
   const [createdMembership] = await db
@@ -152,7 +157,11 @@ async function upsertProjectMember(projectId: string, userId: string, role: Proj
     throw new Error("Failed to add project member");
   }
 
-  return createdMembership;
+  return {
+    membership: createdMembership,
+    event: "created" as const,
+    previousRole: null,
+  };
 }
 
 export async function getProjectMembersSnapshot(projectId: string, userId: string) {
@@ -224,7 +233,26 @@ export async function inviteProjectMember(input: {
 
   if (existingWorkspaceMember) {
     const user = await getOrCreateUserFromMembership(existingWorkspaceMember);
-    await upsertProjectMember(project.id, user.id, input.role);
+    const membershipResult = await upsertProjectMember(project.id, user.id, input.role);
+
+    await recordActivity({
+      workspaceId: project.workspaceId,
+      projectId: project.id,
+      actorId: input.inviterUserId,
+      action: "updated",
+      meta: {
+        entityType: "project_member",
+        event: membershipResult.event === "created" ? "granted" : "role_updated",
+        memberUserId: user.id,
+        memberEmail: user.email,
+        role: input.role,
+        previousRole: membershipResult.previousRole,
+        summary:
+          membershipResult.event === "created"
+            ? `added ${user.name ?? user.email} to project "${project.name}"`
+            : `updated ${user.name ?? user.email} project role to ${input.role}`,
+      },
+    });
 
     return {
       status: "granted" as const,
@@ -276,6 +304,22 @@ export async function inviteProjectMember(input: {
     throw new Error("Failed to create project invitation");
   }
 
+  await recordActivity({
+    workspaceId: project.workspaceId,
+    projectId: project.id,
+    actorId: input.inviterUserId,
+    action: "updated",
+    meta: {
+      entityType: "project_invitation",
+      event: "created",
+      invitationId: createdInvitation.id,
+      email: normalizedEmail,
+      role: input.role,
+      workspaceRoleKey: input.workspaceRoleKey,
+      summary: `sent a project invite to ${normalizedEmail}`,
+    },
+  });
+
   return {
     status: "pending" as const,
     message: "Workspace invite sent. Project access will be granted after acceptance.",
@@ -325,7 +369,11 @@ export async function resolvePendingProjectInvitationsForWorkspaceMember(input: 
   let resolvedCount = 0;
 
   for (const invitation of pendingInvitations) {
-    await upsertProjectMember(invitation.projectId, user.id, invitation.role);
+    const membershipResult = await upsertProjectMember(
+      invitation.projectId,
+      user.id,
+      invitation.role,
+    );
 
     await db
       .update(projectInvitations)
@@ -335,6 +383,34 @@ export async function resolvePendingProjectInvitationsForWorkspaceMember(input: 
         acceptedAt: new Date(),
       })
       .where(eq(projectInvitations.id, invitation.id));
+
+    const [project] = await db
+      .select({
+        id: projects.id,
+        name: projects.name,
+        workspaceId: projects.workspaceId,
+      })
+      .from(projects)
+      .where(eq(projects.id, invitation.projectId))
+      .limit(1);
+
+    if (project) {
+      await recordActivity({
+        workspaceId: project.workspaceId,
+        projectId: project.id,
+        actorId: user.id,
+        action: "updated",
+        meta: {
+          entityType: "project_invitation",
+          event: "accepted",
+          invitationId: invitation.id,
+          email: invitation.email,
+          role: invitation.role,
+          membershipEvent: membershipResult.event,
+          summary: `accepted project invite for "${project.name}"`,
+        },
+      });
+    }
 
     resolvedCount += 1;
   }

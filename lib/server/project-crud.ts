@@ -3,6 +3,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { getActiveClerkOrgRole } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { projectMembers, projects, workspaces } from "@/lib/db/schema";
+import { recordActivity } from "@/lib/server/activity-crud";
 import { ensureProjectDefaultLists, type ProjectTemplate } from "@/lib/server/list-crud";
 import { assertProjectRole } from "@/lib/server/project-permissions";
 import { requireWorkspaceForClerkOrg } from "@/lib/server/workspace-crud";
@@ -33,6 +34,59 @@ function mapOrganizationRoleToProjectRole(orgRole: string | null) {
   }
 
   return null;
+}
+
+function toComparableDate(value: Date | null | undefined) {
+  return value ? new Date(value).toISOString() : null;
+}
+
+function buildProjectChangeMeta(
+  previous: {
+    name: string;
+    description: string | null;
+    key: string | null;
+    dueDate: Date | null;
+    archived: boolean;
+  },
+  next: {
+    name: string;
+    description: string | null;
+    key: string | null;
+    dueDate: Date | null;
+    archived: boolean;
+  },
+) {
+  const changes: Array<Record<string, unknown>> = [];
+
+  if (previous.name !== next.name) {
+    changes.push({ field: "name", from: previous.name, to: next.name });
+  }
+
+  if ((previous.description ?? null) !== (next.description ?? null)) {
+    changes.push({
+      field: "description",
+      from: previous.description ?? null,
+      to: next.description ?? null,
+    });
+  }
+
+  if ((previous.key ?? null) !== (next.key ?? null)) {
+    changes.push({ field: "key", from: previous.key ?? null, to: next.key ?? null });
+  }
+
+  if (toComparableDate(previous.dueDate) !== toComparableDate(next.dueDate)) {
+    changes.push({
+      field: "dueDate",
+      from: toComparableDate(previous.dueDate),
+      to: toComparableDate(next.dueDate),
+    });
+  }
+
+  if (previous.archived !== next.archived) {
+    changes.push({ field: "archived", from: previous.archived, to: next.archived });
+  }
+
+  return changes;
 }
 
 export async function listAccessibleProjects(userId: string, clerkOrgId: string) {
@@ -172,7 +226,22 @@ export async function createOwnedProject(
     throw error;
   }
 
-  return project;
+  await recordActivity({
+    workspaceId: workspace.id,
+    projectId: project.id,
+    actorId: userId,
+    action: "created",
+    meta: {
+      entityType: "project",
+      projectName: project.name,
+      summary: `created project "${project.name}"`,
+    },
+  });
+
+  return {
+    ...project,
+    role: "owner" as const,
+  };
 }
 
 export async function updateOwnedProject(
@@ -181,7 +250,7 @@ export async function updateOwnedProject(
   clerkOrgId: string,
   input: UpdateProjectInput,
 ) {
-  await assertProjectRole(projectId, userId, ["owner", "admin"]);
+  const membership = await assertProjectRole(projectId, userId, ["owner", "admin"]);
 
   const [scopedProject] = await db
     .select({ id: projects.id })
@@ -191,6 +260,24 @@ export async function updateOwnedProject(
     .limit(1);
 
   if (!scopedProject) {
+    throw new Error("NotFound");
+  }
+
+  const [projectBeforeUpdate] = await db
+    .select({
+      id: projects.id,
+      workspaceId: projects.workspaceId,
+      name: projects.name,
+      description: projects.description,
+      key: projects.key,
+      dueDate: projects.dueDate,
+      archived: projects.archived,
+    })
+    .from(projects)
+    .where(eq(projects.id, projectId))
+    .limit(1);
+
+  if (!projectBeforeUpdate) {
     throw new Error("NotFound");
   }
 
@@ -207,7 +294,28 @@ export async function updateOwnedProject(
     throw new Error("NotFound");
   }
 
-  return project;
+  const changes = buildProjectChangeMeta(projectBeforeUpdate, project);
+  const archiveChanged = projectBeforeUpdate.archived !== project.archived;
+
+  await recordActivity({
+    workspaceId: projectBeforeUpdate.workspaceId,
+    projectId: project.id,
+    actorId: userId,
+    action: archiveChanged ? (project.archived ? "archived" : "unarchived") : "updated",
+    meta: {
+      entityType: "project",
+      projectName: project.name,
+      changes,
+      summary: archiveChanged
+        ? `${project.archived ? "archived" : "restored"} project "${project.name}"`
+        : `updated project "${project.name}"`,
+    },
+  });
+
+  return {
+    ...project,
+    role: membership.role,
+  };
 }
 
 export async function deleteOwnedProject(projectId: string, userId: string, clerkOrgId: string) {
@@ -224,11 +332,38 @@ export async function deleteOwnedProject(projectId: string, userId: string, cler
     throw new Error("NotFound");
   }
 
+  const [projectBeforeDelete] = await db
+    .select({
+      id: projects.id,
+      workspaceId: projects.workspaceId,
+      name: projects.name,
+    })
+    .from(projects)
+    .where(eq(projects.id, projectId))
+    .limit(1);
+
+  if (!projectBeforeDelete) {
+    throw new Error("NotFound");
+  }
+
   const [project] = await db.delete(projects).where(eq(projects.id, projectId)).returning();
 
   if (!project) {
     throw new Error("NotFound");
   }
+
+  await recordActivity({
+    workspaceId: projectBeforeDelete.workspaceId,
+    actorId: userId,
+    action: "updated",
+    meta: {
+      entityType: "project",
+      event: "deleted",
+      deletedProjectId: projectBeforeDelete.id,
+      projectName: projectBeforeDelete.name,
+      summary: `deleted project "${projectBeforeDelete.name}"`,
+    },
+  });
 
   return project;
 }

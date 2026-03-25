@@ -23,6 +23,7 @@ type TaskFromApi = {
   reporterId: string | null;
   dueDate: string | null;
   startDate: string | null;
+  labels: string[];
   reporterName: string | null;
   reporterAvatarUrl: string | null;
   commentCount: number;
@@ -57,6 +58,7 @@ type CreateTaskInput = {
   reporterId?: string | null;
   dueDate?: string | null;
   startDate?: string | null;
+  labels?: string[];
   position?: number;
 };
 
@@ -70,6 +72,7 @@ type UpdateTaskInput = Partial<{
   reporterId: string | null;
   dueDate: string | null;
   startDate: string | null;
+  labels: string[];
   position: number;
   archived: boolean;
 }>;
@@ -93,6 +96,7 @@ type TaskApiRecord = {
   reporterId?: string | null;
   dueDate?: string | Date | null;
   startDate?: string | Date | null;
+  labels?: string[] | null;
   reporterName?: string | null;
   reporterAvatarUrl?: string | null;
   commentCount?: number | string | null;
@@ -115,6 +119,7 @@ function normalizeTask(input: TaskApiRecord): TaskFromApi {
     reporterId: input.reporterId ?? null,
     dueDate: input.dueDate ? new Date(input.dueDate).toISOString() : null,
     startDate: input.startDate ? new Date(input.startDate).toISOString() : null,
+    labels: input.labels ?? [],
     reporterName: input.reporterName ?? null,
     reporterAvatarUrl: input.reporterAvatarUrl ?? null,
     commentCount: Number(input.commentCount ?? 0),
@@ -206,6 +211,7 @@ export function useTasks(projectId: string) {
         reporterId: input.reporterId ?? null,
         dueDate: input.dueDate ?? null,
         startDate: input.startDate ?? null,
+        labels: input.labels ?? [],
         position: input.position,
       };
 
@@ -222,6 +228,7 @@ export function useTasks(projectId: string) {
         reporterId: payload.reporterId ?? null,
         dueDate: payload.dueDate ?? null,
         startDate: payload.startDate ?? null,
+        labels: payload.labels ?? [],
         reporterName: null,
         reporterAvatarUrl: null,
         commentCount: 0,

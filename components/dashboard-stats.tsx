@@ -46,7 +46,7 @@ export function DashboardStats({ stats = fallbackStats }: { stats?: DashboardSta
     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
       {stats.map((stat) => (
         <Card key={stat.name} variant="glass" className="overflow-hidden">
-          <CardContent className="p-6">
+          <CardContent className="p-0">
             <CardInset className="p-4">
               <div className="flex items-center">
                 <div className="flex-shrink-0">

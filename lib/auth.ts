@@ -11,7 +11,7 @@ type ClerkOrganizationMembership = {
     user_id?: string | null;
   };
 };
-
+ 
 function toOrganizationMemberships(value: unknown): ClerkOrganizationMembership[] {
   if (Array.isArray(value)) {
     return value as ClerkOrganizationMembership[];

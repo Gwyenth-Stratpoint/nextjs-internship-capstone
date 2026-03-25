@@ -2,6 +2,8 @@ import { and, asc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { activity, comments, projects, tasks, users } from "@/lib/db/schema";
+import { recordActivity } from "@/lib/server/activity-crud";
+import { describeActivity } from "@/lib/server/activity-format";
 import { assertProjectRole, getProjectMembership } from "@/lib/server/project-permissions";
 
 type CreateTaskCommentInput = {
@@ -79,7 +81,7 @@ export async function createTaskComment(
     throw new Error("Failed to create comment");
   }
 
-  await db.insert(activity).values({
+  await recordActivity({
     workspaceId: task.workspaceId,
     projectId: task.projectId,
     taskId,
@@ -88,6 +90,7 @@ export async function createTaskComment(
     meta: {
       commentId: createdComment.id,
       contentPreview: createdComment.content.slice(0, 120),
+      summary: "commented on this task",
     },
   });
 
@@ -110,44 +113,6 @@ export async function createTaskComment(
   }
 
   return normalizedComment;
-}
-
-function describeActivity(action: string, actorName: string | null, meta: Record<string, unknown>) {
-  const actorLabel = actorName ?? "Someone";
-
-  switch (action) {
-    case "commented":
-      return `${actorLabel} commented on this task`;
-    case "moved": {
-      const sourceListName = typeof meta.sourceListName === "string" ? meta.sourceListName : null;
-      const destinationListName =
-        typeof meta.destinationListName === "string" ? meta.destinationListName : null;
-
-      if (sourceListName && destinationListName) {
-        return `${actorLabel} moved this task from ${sourceListName} to ${destinationListName}`;
-      }
-
-      return `${actorLabel} moved this task`;
-    }
-    case "updated":
-      return `${actorLabel} updated this task`;
-    case "assigned":
-      return `${actorLabel} assigned this task`;
-    case "unassigned":
-      return `${actorLabel} unassigned this task`;
-    case "labeled":
-      return `${actorLabel} updated task labels`;
-    case "unlabeled":
-      return `${actorLabel} removed a task label`;
-    case "archived":
-      return `${actorLabel} archived this task`;
-    case "unarchived":
-      return `${actorLabel} restored this task`;
-    case "created":
-      return `${actorLabel} created this task`;
-    default:
-      return `${actorLabel} changed this task`;
-  }
 }
 
 export async function listTaskActivity(

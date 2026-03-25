@@ -145,8 +145,7 @@ export default function ProjectsPage() {
                 name: project.name,
                 description: project.description,
                 dueDate: project.dueDate,
-                status: project.archived ? "archived" : "active",
-                role: `${project.archived ? "Archived" : "Active"} • ${project.role}`,
+                role: project.role,
               }}
               href={`/projects/${project.id}`}
               actions={
@@ -174,11 +173,6 @@ export default function ProjectsPage() {
                       Delete
                     </button>
                   </>
-                ) : undefined
-              }
-              footer={
-                !canManageProject ? (
-                  <p className="text-xs text-muted-foreground">Read-only access</p>
                 ) : undefined
               }
             />

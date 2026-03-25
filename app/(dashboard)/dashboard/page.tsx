@@ -8,6 +8,7 @@ import { DashboardStats } from "@/components/dashboard-stats";
 import { ProjectCard } from "@/components/project-card";
 import { RecentProjects } from "@/components/recent-projects";
 import { Card, CardContent, CardHeader, CardInset, CardTitle } from "@/components/ui/card";
+import { useDashboardOverview } from "@/hooks/use-dashboard-overview";
 import { useProjects } from "@/hooks/use-projects";
 
 function DashboardProjectsSkeleton() {
@@ -39,6 +40,7 @@ function formatProjectDate(value: string) {
 
 export default function DashboardPage() {
   const { projects, isLoading, error } = useProjects();
+  const { overview, isLoading: isOverviewLoading, error: overviewError } = useDashboardOverview();
 
   const activeProjects = useMemo(() => projects.filter((project) => !project.archived), [projects]);
 
@@ -46,37 +48,47 @@ export default function DashboardPage() {
     () => [
       {
         name: "Active Projects",
-        value: isLoading ? "--" : activeProjects.length,
-        change: isLoading ? "Loading..." : `${projects.length - activeProjects.length} archived`,
+        value: isOverviewLoading ? "--" : (overview?.activeProjects ?? 0),
+        change: isOverviewLoading ? "Loading..." : `${overview?.archivedProjects ?? 0} archived`,
         changeType: "positive" as const,
         icon: TrendingUp,
       },
       {
         name: "Team Members",
-        value: "--",
-        change: "Task 6.1 team data pending",
+        value: isOverviewLoading ? "--" : (overview?.teamMembers ?? 0),
+        change: isOverviewLoading
+          ? "Loading..."
+          : `${overview?.pendingInvites ?? 0} pending invites`,
         changeType: "neutral" as const,
         icon: Users,
       },
       {
         name: "Completed Tasks",
-        value: "--",
-        change: "Task 4.4 useTasks pending",
+        value: isOverviewLoading ? "--" : (overview?.completedTasks ?? 0),
+        change: isOverviewLoading
+          ? "Loading..."
+          : `${overview?.pendingTasks ?? 0} still in progress`,
         changeType: "neutral" as const,
         icon: CheckCircle,
       },
       {
         name: "Pending Tasks",
-        value: "--",
-        change: "Task 4.4 useTasks pending",
+        value: isOverviewLoading ? "--" : (overview?.pendingTasks ?? 0),
+        change: isOverviewLoading ? "Loading..." : `${overview?.overdueTasks ?? 0} overdue`,
         changeType: "neutral" as const,
         icon: Clock,
       },
     ],
-    [activeProjects.length, isLoading, projects.length],
+    [isOverviewLoading, overview],
   );
 
-  const recentProjects = useMemo(() => projects.slice(0, 3), [projects]);
+  const recentProjects = useMemo(
+    () =>
+      [...projects]
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+        .slice(0, 3),
+    [projects],
+  );
 
   return (
     <div className="space-y-6">
@@ -123,19 +135,26 @@ export default function DashboardPage() {
                 className="flex items-center justify-center gap-2 px-4 py-3 text-center text-sm font-medium text-outer_space-500 dark:text-platinum-500"
               >
                 <Plus size={20} />
-                Create Task
+                Open Task Board
               </CardInset>
             </Link>
             <CardInset
               as="div"
-              className="border-amber-200/70 bg-amber-50/70 p-4 text-sm text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200"
+              className="border-blue-200/70 bg-blue-50/70 p-4 text-sm text-sky-900 dark:bg-sky-900/20 dark:text-sky-100"
             >
-              Project data is live. Team and task counts depend on later TODOs in the instructor
-              files.
+              {isOverviewLoading
+                ? "Refreshing your workspace snapshot..."
+                : `${overview?.pendingTasks ?? 0} active tasks are currently open across ${overview?.activeProjects ?? activeProjects.length} live projects.`}
             </CardInset>
           </CardContent>
         </Card>
       </div>
+
+      {overviewError ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          Failed to load dashboard overview: {overviewError}
+        </div>
+      ) : null}
 
       <section className="space-y-4">
         <div>
@@ -183,7 +202,7 @@ export default function DashboardPage() {
                   description: project.description,
                   dueDate: project.dueDate,
                   status: project.archived ? "archived" : "active",
-                  role: project.key ?? undefined,
+                  role: project.role,
                 }}
                 footer={
                   <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">

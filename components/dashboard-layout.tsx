@@ -15,7 +15,6 @@ import {
   X,
   BarChart3,
   Bell,
-  Calendar,
   Search,
 } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
@@ -27,7 +26,6 @@ const navigation = [
   { name: "Projects", href: "/projects", icon: FolderOpen },
   { name: "Team", href: "/team", icon: Users },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
-  { name: "Calendar", href: "/calendar", icon: Calendar },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
