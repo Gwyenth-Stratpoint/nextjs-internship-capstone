@@ -1,7 +1,7 @@
 "use client";
 
 import { BarChart3, CheckCircle2, Clock3, FolderKanban, Layers3 } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { Suspense, useEffect, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { AnalyticsStatusChart } from "@/components/analytics-status-chart";
@@ -23,7 +23,7 @@ function buildAnalyticsSearch(selectedProjectId: string | null) {
   return searchParams.toString();
 }
 
-export default function AnalyticsPage() {
+function AnalyticsPageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -164,5 +164,37 @@ export default function AnalyticsPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function AnalyticsPageFallback() {
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Analytics</h1>
+          <p className="mt-2 text-muted-foreground">Loading live analytics...</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-5">
+        {Array.from({ length: 5 }).map((_, index) => (
+          <CardInset key={index} className="rounded-[20px] px-4 py-4">
+            <div className="mb-4 h-10 w-10 animate-pulse rounded-xl bg-slate-100" />
+            <div className="h-8 w-16 animate-pulse rounded bg-slate-100" />
+            <div className="mt-3 h-4 w-28 animate-pulse rounded bg-slate-100" />
+            <div className="mt-2 h-4 w-32 animate-pulse rounded bg-slate-100" />
+          </CardInset>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function AnalyticsPage() {
+  return (
+    <Suspense fallback={<AnalyticsPageFallback />}>
+      <AnalyticsPageContent />
+    </Suspense>
   );
 }
